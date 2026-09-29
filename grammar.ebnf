@@ -1,0 +1,39 @@
+(* Grammar for sigmaLang - Project Stage 1 *)
+(* Languages and Compilers Design *)
+
+program      ::= { statement } ;
+
+statement    ::= decl | assign | if_stmt | exit_stmt ;
+
+(* Declarations: constants (canon), mutable variables (yap), immutable variables (canonmaxing) *)
+decl         ::= var_kind type ident ":=" expr ;
+var_kind     ::= "canon" | "yap" | "canonmaxing" ;
+
+type         ::= i32_type | i64_type | bool_type ;
+i32_type     ::= "npc"   | "👶" ;
+i64_type     ::= "sigma" | "🗿" ;
+bool_type    ::= "take"  | "💡" ;
+
+(* Assignment: only allowed for mutable (yap) variables *)
+assign       ::= ident ( ":=" | "👈🏻" ) expr ;
+
+(* If-Else block: requires at least one statement in each block *)
+if_stmt      ::= "is_this_real" expr "{" statement { statement } "}" [ "nah" "{" statement { statement } "}" ] ;
+
+exit_stmt    ::= "exit" factor ;
+
+(* Expressions *)
+expr         ::= arith [ comp_op arith ] ;
+comp_op      ::= "==" | "!=" | "🤝" | "💔" ;
+
+arith        ::= term { add_op term } ;
+add_op       ::= "+" | "-" ;
+
+term         ::= factor { mul_op factor } ;
+mul_op       ::= "*" ;
+
+factor       ::= number | bool_lit | ident | "(" expr ")" ;
+bool_lit     ::= "hot" | "cringe" ;
+
+number       ::= digit { digit } ;
+ident        ::= letter { letter | digit | "_" } ;

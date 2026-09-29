@@ -1,0 +1,786 @@
+# AI Usage Log - CS400
+
+## Project Stage 1 (sigmaLang)
+
+<!-- session: 55ed7fc8-9f22-4a46-a6cd-99b692589726 -->
+User:
+/plan привіт. працєюмо над @[.agents/stage1-files/w04-project-stage1.md]. дай оверв'ю того що треба зробити і чи є тут залежність від коду написаного в гілці practice-4? щоб розуміти як гілку правильно зробити
+
+Model:
+Я підготував детальний план реалізації у файлі [project_stage1_plan.md](file:///home/ubuntu/snap/antigravity-cli/common/.gemini/antigravity-cli/brain/55ed7fc8-9f22-4a46-a6cd-99b692589726/project_stage1_plan.md) відповідно до специфікації [w04-project-stage1.md](file:///home/ubuntu/cs400/.agents/stage1-files/w04-project-stage1.md).
+
+Нижче відповіді на ваші головні запитання:
+
+---
+
+### 1. Чи є залежність від коду в гілці `practice-4`?
+**Прямої кодової чи гілкової залежності немає:**
+- **Різні мови:** У гілці `practice-4` розроблялася навчальна мова викладача (з `exit`, синтаксисом без фігурних дужок, фіксованими ключовими словами `i32/i64/bool`, тощо). У **Project Stage 1** ви створюєте **власну авторську мову** з нуля, що обов'язково включає емодзі (для операторів, ключових слів або типів), конструкції `if/else` з блоками `{ stmt+ }`, перевірку переповнення типів тощо.
+- **Різні етапи компілятора:** У `practice-4` реалізовувалися семантичний аналіз (Task 2) та кодогенерація в LLVM IR через `llvmlite` (Task 3). У **Stage 1 проєкту** вони **не потрібні** — семантика та IR generation перенесені на Stage 2. Для Stage 1 потрібні лише EBNF-граматика, побайтовий лексер, синтаксичний парсер (AST) та прапорець `--ast`.
+- **Архітектурна спадковість:** Ми повторно використовуємо підходи та патерни з практик (побайтовий кінцевий автомат, рекурсивний спуск `peek`/`eat`, датакласи AST, обробка помилок `compilation error: line L:C: message`), але код пишеться під вашу нову граматику.
+
+---
+
+### 2. Як правильно організувати гілку та репозиторій?
+
+Зверніть увагу на пункт **SUBMISSION** у вимогах:
+> 1. *Create a **new repository** for the course project (GitHub or GitLab, private or public) and add `vovaskochko` as a collaborator on the first day...*
+> 2. *Track your progress on a separate branch named `stage1`, with real commits and real messages.*
+> 3. *When the stage is complete, open a pull request from `stage1` into `main` and add `vovaskochko` as a reviewer.*
+
+#### Рекомендована стратегія:
+1. **Окремий репозиторій (згідно з ТЗ):**
+   - Створити новий репозиторій (наприклад, `cs400-project-vkatsel` на GitHub), ініціалізувати в ньому гілку `main` (базовий README та `.gitignore`).
+   - Від `main` створити гілку `stage1`.
+   - Всі коміти проєкту вести в гілці `stage1`, а після завершення відкрити PR `stage1 -> main` для перевірки.
+2. **Якщо ви ведете проєкт у поточному `cs400-course-repo-vkatsel`:**
+   - **Не відгалужуйтеся від `practice-4`!**
+   - Відгалужуйтеся від чистого `main` (`git checkout main && git checkout -b stage1`), щоб у pull request не потрапили коміти практик.
+
+---
+
+### 3. Оверв'ю завдань Stage 1
+1. **TASK 1 (`ai_usage.txt`)**: обов'язковий детальний лог використання ШІ (відсутність або формальний опис = 0 балів за етап).
+2. **TASK 2 (Дизайн мови та EBNF, 4 бали)**: створення власної мови з емодзі та описом у `grammar.ebnf`. Обов'язкова підтримка двох цілих типів (`i32`/`i64`), булевого типу, констант/змінних (`mut`), присвоєння, порівнянь, overflow-перевірок та блоків `if ... { ... } [else { ... }]`.
+3. **TASK 3 (Опціонально, 0 балів)**: просте розширення для VS Code для швидкого набору емодзі.
+4. **TASK 4 (Лексер і парсер, 5 балів)**:
+   - Лексер: кінцевий автомат, що побайтово розбирає UTF-8 послідовності емодзі та інші токени.
+   - Парсер: рекурсивний спуск, що будує ієрархію вузлів AST.
+   - CLI: `python3 compiler.py --ast input.txt` друкує дерево AST.
+   - Помилки: `compilation error: line L:C: message` в stderr з ненульовим exit-кодом.
+5. **TASK 5 (Тести, 3 бали)**:
+   - Мінімум 15 позитивних тестів (`ok`) з очікуваними AST-файлами.
+   - Мінімум 15 негативних тестів (`err`) з очікуваними текстами помилок.
+   - Скрипт автоматичного запуску тестів.
+6. **TASK 6 (README, 1 бал)**: опис синтаксису мови, інструкції запуску компілятора та тестів.
+
+---
+
+### Питання для узгодження перед початком:
+1. **Репозиторій:** Чи створюємо окремий новий репозиторій (згідно з інструкцією викладача), чи працюємо в існуючому `cs400-course-repo-vkatsel` у новій гілці `stage1` від `main`?
+2. **Концепція мови:** Які емодзі та ключові слова вам до вподоби (перегляньте чернетку в [project_stage1_plan.md](file:///home/ubuntu/snap/antigravity-cli/common/.gemini/antigravity-cli/brain/55ed7fc8-9f22-4a46-a6cd-99b692589726/project_stage1_plan.md)), або чи маєте власну ідею щодо синтаксису?
+
+---
+
+User:
+/plan окей я створив новий репо @[sigmaLang-source], там вже є файлик з аі юзеджем. треба шоб ти якось орієнтувався куда саме писати лог. в @[.agents/stage1-files] теж є відповідна директорія з бекапом аі юзу та завданням. чи можеш модифікувати скрипт щоб він розумів над чим саме ми працюємо, як це можливо? бо зараз лог треба писати буде саме в '/home/ubuntu/cs400/sigmaLang-source/ai_usage.txt' та '/home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt'
+
+Model:
+Так, це не просто можливо, а й дуже надійно реалізувати. 
+
+Я створив план у [log_ai_usage_plan.md](file:///home/ubuntu/snap/antigravity-cli/common/.gemini/antigravity-cli/brain/55ed7fc8-9f22-4a46-a6cd-99b692589726/log_ai_usage_plan.md).
+
+### Як скрипт розумітиме, над чим ми працюємо?
+
+Оскільки хук `PostInvocation` запускає [`log_ai_usage.py`](file:///home/ubuntu/cs400/.agents/log_ai_usage.py) після кожної відповіді, скрипт може визначати контекст за **трирівневим принципом**:
+
+1. **Аналіз транскрипту поточної сесії (найточніший метод, 100% відповідність):**
+   - Скрипт відкриває `transcript.jsonl` активної розмови.
+   - Якщо в повідомленнях зустрічаються ключові слова `sigmaLang`, `sigmaLang-source`, `stage1`, `w04-project-stage1` тощо — сесія однозначно належить до **Project Stage 1**.
+   - Якщо зустрічаються `practice-4`, `w04-practice`, `w4` — сесія належить до **Practice 4**.
+
+2. **Маркер активного контексту (`.agents/.active_target`):**
+   - Як тільки скрипт розпізнає контекст (або ви вручну вкажете його), він записує його в службовий файл (наприклад, `stage1`).
+   - Якщо в якомусь короткому запиті (наприклад, "дякую" чи "запусти тест") ключових слів немає, скрипт бере значення з маркера.
+
+3. **Перевірка Git та Workspace:**
+   - Перевірка поточної гілки в [`/home/ubuntu/cs400/sigmaLang-source`](file:///home/ubuntu/cs400/sigmaLang-source) (`stage1`) та шляхів у воркспейсі.
+
+---
+
+### Куди саме писатиметься лог:
+- **Для Project Stage 1:**
+  - Основний файл: [`/home/ubuntu/cs400/sigmaLang-source/ai_usage.txt`](file:///home/ubuntu/cs400/sigmaLang-source/ai_usage.txt)
+  - Резервна копія для Moodle: [`/home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt`](file:///home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt)
+  - Заголовок: `# AI Usage Log - CS400\n\n## Project Stage 1 (sigmaLang)`
+- **Для практик:**
+  - Без змін залишається шлях до `cs400-course-repo-vkatsel` та `.agents/wX-files`.
+
+Також оновлений скрипт автоматично **вичистить поточну сесію з файлів Практики 4** (куди вона випадково записалася попереднім запуском) і запише її виключно в файли Stage 1.
+
+Якщо ви погоджуєте план, дайте знати — і я внесу зміни в [`log_ai_usage.py`](file:///home/ubuntu/cs400/.agents/log_ai_usage.py) та запущу його.
+
+---
+
+User:
+/plan це поганий підхід, дуже наївна перевірка. може ще якісь опції як можна взначити?
+
+Model:
+Повністю згоден — текстовий пошук у чаті є занадто крихким і ненадійним евристичним підходом.
+
+Ось надійні системні та архітектурні варіанти без жодного парсингу вільних слів:
+
+---
+
+### Варіант 1: Явний файл конфігурації цілі (`Single Source of Truth`)
+Найбільш детермінований і прозорий підхід.
+- У [`.agents/target.json`](file:///home/ubuntu/cs400/.agents) зберігаємо поточну ціль:
+  ```json
+  {
+    "active": "stage1",
+    "targets": {
+      "stage1": {
+        "repo": "/home/ubuntu/cs400/sigmaLang-source",
+        "backup": "/home/ubuntu/cs400/.agents/stage1-files",
+        "title": "Project Stage 1 (sigmaLang)"
+      },
+      "practice-4": {
+        "repo": "/home/ubuntu/cs400/cs400-course-repo-vkatsel",
+        "backup": "/home/ubuntu/cs400/.agents/w4-files",
+        "title": "Practice 4"
+      }
+    }
+  }
+  ```
+- **Як працює:** скрипт не намагається нічого вгадувати — він просто бере `active` і пише рівно в призначені шляхи.
+- **Плюси:** 100% передбачуваність, нуль несподіванок. Для зміни цілі достатньо змінити одне слово в файлі або зробити команду `switch-target stage1`.
+
+---
+
+### Варіант 2: Аналіз реальних файлових дій агента (`Tool Calls Inspection`)
+Замість аналізу тексту повідомлень дивитися на **структуровані виклики інструментів** у сесії.
+- У `transcript.jsonl` агент фіксує виклики інструментів: `write_to_file`, `replace_file_content`, `run_command` (де є аргументи `TargetFile`, `AbsolutePath`, `Cwd`).
+- **Як працює:** скрипт перевіряє, до якого репозиторію належали файли, що створювалися/редагувалися або команди, що запускалися:
+  - якщо шляхи всередині `/home/ubuntu/cs400/sigmaLang-source/` $\rightarrow$ це `stage1`;
+  - якщо всередині `/home/ubuntu/cs400/cs400-course-repo-vkatsel/` $\rightarrow$ це `practice`.
+- **Плюси:** базується на реальних змінах коду на диску, а не на словах.
+
+---
+
+### Варіант 3: Стан Git репозиторіїв (`Git Context & Activity`)
+- **Як працює:**
+  1. Перевірка назви гілки: у `sigmaLang-source` ви створюєте гілку `stage1`. Якщо поточна гілка `stage1` $\rightarrow$ контекст визначено.
+  2. Перевірка активності: скрипт порівнює `mtime` останніх змін файлів або останнього коміту між `sigmaLang-source` та `cs400-course-repo-vkatsel`. Репозиторій з найсвіжішою активністю вважається активним.
+- **Плюси:** автоматично реагує на те, в якому git-репозиторії зараз іде робота.
+
+---
+
+### Варіант 4: Гібридний (Рекомендовано)
+Поєднує переваги:
+1. Якщо задано явний конфіг [`.agents/target.json`](file:///home/ubuntu/cs400/.agents) — він має найвищий пріоритет.
+2. Якщо ні — аналіз викликів інструментів у сесії (куди агент реально пише код).
+3. Якщо змін ще не було — стан Git (активна гілка `stage1` або найсвіжіший репозиторій).
+
+Який із цих варіантів вам здається найбільш зручним і надійним для вашого воркфлоу?
+
+---
+
+User:
+з гілками цікаво звучить, і воно зараз так і працює для курсового репозиторію. але як понять до якого репозиторію буде стосуватися це уже нюанс. давай варік з таргетом, його вручну треба буде міняти?
+
+Model:
+Його можна зробити максимально зручним, і ось які у вас є варіанти:
+
+---
+
+### 1. Явний фіксований таргет (`target.json`)
+Ви (або я за вашим запитом) один раз вказуєте активну ціль у невеличкому файлі `target.json` (або простому однорядковому файлі [`.agents/current_target`](file:///home/ubuntu/cs400/.agents)):
+
+```json
+{
+  "active": "stage1"
+}
+```
+
+* **Чи треба міняти щоразу?** 
+  Ні! Ви працюєте над курсовим проєктом весь тиждень чи два — і весь цей час таргет залишається `stage1`. Усі повідомлення та сесії 100% залізобетонно йдуть у:
+  - [`/home/ubuntu/cs400/sigmaLang-source/ai_usage.txt`](file:///home/ubuntu/cs400/sigmaLang-source/ai_usage.txt)
+  - [`/home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt`](file:///home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt)
+* **Як його міняти?**
+  - **Через мене:** ви просто кажете в чаті «переходимо на практику 5» або «робимо stage 2», і я сам перемикаю файл.
+  - **Вручну або в терміналі:** можна зробити скрипт/аліас `set-target stage1` або просто відкрити файл і змінити одне слово.
+
+---
+
+### 2. Навіть без ручного перемикання — через назви Git-гілок!
+Оскільки ви згадали гілки: зверніть увагу на важливу деталь — **назви гілок у цих двох репозиторіях ніколи не перетинаються**:
+- У репозиторії практик [`cs400-course-repo-vkatsel`](file:///home/ubuntu/cs400/cs400-course-repo-vkatsel) гілки називаються: `practice-2`, `practice-3`, `practice-4`, `practice-5`.
+- У репозиторії курсового [`sigmaLang-source`](file:///home/ubuntu/cs400/sigmaLang-source) гілки за регламентом називаються: `stage1`, `stage2`, `stage3`.
+
+**Як це можна поєднати:**
+Скрипт перевіряє:
+1. Якщо в `target.json` стоїть конкретний таргет (наприклад `"stage1"`) — використовується він (якщо ви хочете зафіксувати намертво).
+2. Якщо в `target.json` стоїть `"auto"` (або файл відсутній):
+   - Скрипт дивиться, у якому репозиторії поточна гілка відповідає шаблону:
+     - Якщо в `sigmaLang-source` активна гілка `stage1` $\rightarrow$ автоматично пише в `sigmaLang-source` та `stage1-files`.
+     - Якщо ви перемкнулися в `cs400-course-repo-vkatsel` і там активна гілка `practice-4` $\rightarrow$ пише туди.
+
+---
+
+### Що пропоную зробити зараз:
+1. Створити конфіг [`.agents/target.json`](file:///home/ubuntu/cs400/.agents) зі значенням `"stage1"` (з маппінгом шляхів для `stage1`, `stage2`, `practice-4` тощо).
+2. Оновити [`log_ai_usage.py`](file:///home/ubuntu/cs400/.agents/log_ai_usage.py):
+   - Читати конфіг `target.json`.
+   - Якщо активний `stage1` — писати в `sigmaLang-source/ai_usage.txt` та `.agents/stage1-files/ai_usage.txt` з відповідним заголовком `## Project Stage 1 (sigmaLang)`.
+   - Очистити хибний запис поточної сесії з файлів практики 4 та перенести його в Stage 1.
+
+Робимо так?
+
+---
+
+User:
+так роби
+
+Model:
+Все налаштовано та перевірено:
+
+1. **Створено конфіг [`.agents/target.json`](file:///home/ubuntu/cs400/.agents/target.json)**:
+   ```json
+   {
+     "active": "stage1",
+     "targets": {
+       "stage1": {
+         "title": "Project Stage 1 (sigmaLang)",
+         "repo_file": "/home/ubuntu/cs400/sigmaLang-source/ai_usage.txt",
+         "backup_file": "/home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt"
+       },
+       "practice-4": {
+         "title": "Practice 4",
+         "repo_file": "/home/ubuntu/cs400/cs400-course-repo-vkatsel/ai_usage.txt",
+         "backup_file": "/home/ubuntu/cs400/.agents/w4-files/ai_usage.txt"
+       }
+     }
+   }
+   ```
+
+2. **Оновлено скрипт [`log_ai_usage.py`](file:///home/ubuntu/cs400/.agents/log_ai_usage.py)**:
+   - Він читає `target.json`. Якщо вказано `"active": "stage1"`, пише туди.
+   - Має fallback: якщо стоїть `"auto"`, перевіряє `HEAD` гілок обох репозиторіїв (`stage1` vs `practice-X`).
+   - Має механізм автоматичного очищення: якщо сесія випадково потрапила в інший файл (як сталося раніше з практикою 4), скрипт видаляє її звідти.
+
+3. **Верифікація**:
+   - Уся поточна розмова успішно записана в:
+     - [`/home/ubuntu/cs400/sigmaLang-source/ai_usage.txt`](file:///home/ubuntu/cs400/sigmaLang-source/ai_usage.txt)
+     - [`/home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt`](file:///home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt)
+   - Помилковий запис поточної сесії повністю вичищено з файлів Практики 4.
+   - Хук працює стабільно й автоматично оновлюватиме файл після кожної відповіді.
+
+Тепер ми повністю готові до розробки Stage 1! Чи переходимо до проєктування синтаксису мови та заповнення [`grammar.ebnf`](file:///home/ubuntu/cs400/sigmaLang-source/grammar.ebnf)?
+
+---
+
+User:
+ок. я заскафолдив репо, створив основні файли. чи дозволяє @[.agents/stage1-files/w04-project-stage1.md] писати програмні файли в теці src/? також я вже створив окреме середовище .venv. окрім цього я не до кінця зараз розумію як саме пишуться оці .ebnf файли і що мені саме потрібно як написати. маю певний концепт для мови але хочу шоб ти мене зорієнтував. і це ж от якраз перший таск да?
+
+Model:
+### 1. Чи дозволяє завдання тримати вихідний код у `src/`?
+**Так, дозволяє!** 
+У вимогах зазначено лише:
+> *"Make sure the pull request contains everything: the source code, `grammar.ebnf`, `ai_usage.txt`, `README.md`, the tests and the script that runs them."*
+
+Але зверніть увагу на очікувану команду запуску з ТЗ:
+```bash
+python3 compiler.py --ast input.txt
+```
+Тому ідеальна структура — тримати всі робочі модулі (`lexer.py`, `parser.py`, `ast_nodes.py` тощо) всередині [`src/`](file:///home/ubuntu/cs400/sigmaLang-source/src), а в корені репозиторію мати файл [`compiler.py`](file:///home/ubuntu/cs400/sigmaLang-source), який просто імпортує `src` і запускає його (як легка точка входу). Це зробить проєкт структурованим і 100% сумісним із тестами викладача.
+
+---
+
+### 2. Чи це перший таск?
+- **TASK 1** за формальною нумерацією — це `ai_usage.txt`. Ми його вже підготували, і він автоматично фіксує нашу розмову.
+- **TASK 2** — це **дизайн вашої мови та написання `grammar.ebnf`** (дає 4 бали із 15).
+У завданні є спеціальне попередження:
+> *«Warning. Grammar first, node hierarchy second, parser third. A node class that changes every time a grammar rule changes is a sign the grammar was not finished.»*
+Тобто зараз ми якраз маємо спочатку повністю узгодити й написати граматику, перш ніж писати код лексера чи парсера.
+
+---
+
+### 3. Що таке `.ebnf` і як він пишеться?
+**EBNF (Extended Backus–Naur Form)** — це формальний запис правил синтаксису мови. Це як математична формула мови: все, що дозволяє парсер, описується цими правилами.
+
+Ось базовий синтаксис EBNF:
+1. **Правило (продукція)**: `RuleName = Expression ;`
+2. **Термінали** (фіксовані токени/слова/емодзі): пишуться в лапках: `"if"`, `"+"`, `"💀"`, `"📦"`
+3. **Нетермінали** (інші правила): назви без лапок: `program`, `statement`, `expression`
+4. **Вибір (альтернатива)**: вертикальна риска `|`
+   ```ebnf
+   type = "📦" | "🏛️" | "💡" ;
+   ```
+5. **Послідовність**: просто йдуть один за одним:
+   ```ebnf
+   var_decl = type identifier ":=" expr ;
+   ```
+6. **Опціональність** (0 або 1 раз): у квадратних дужках `[ ... ]`:
+   ```ebnf
+   if_stmt = "if" expr "{" stmt_list "}" [ "else" "{" stmt_list "}" ] ;
+   ```
+7. **Повторення**:
+   - `{ ... }` — повторення 0 або більше разів (як `*` у regex).
+   - Або якщо 1 і більше: `statement { statement }` (або `statement+`).
+
+---
+
+### 4. Обов'язковий мінімум для вашої мови:
+Ваша мова за вимогами ТЗ обов'язково повинна мати:
+1. **Два цілих типи** (аналоги `i32` та `i64`).
+2. **Булевий тип** (аналог `bool`) та його літерали (`true` / `false`).
+3. **Константи, змінювані (`mut`) та незмінні змінні**.
+4. **Присвоєння** (наприклад, `:=` або емодзі).
+5. **Оператори порівняння** (мінімум аналоги `==` та `!=`).
+6. **Перевірка переповнення типів** (числа мають валідуватися на межі типу).
+7. **Умовний оператор `if / else`**:
+   - умова `boolExpr`;
+   - блоки обов'язково в `{ stmt+ }` (мінімум один оператор всередині блоку);
+   - `else` є опціональним.
+8. **Емодзі**: як мінімум для операторів, ключових слів чи типів.
+
+---
+
+### Розкажіть про ваш концепт:
+Оскільки репозиторій називається **`sigmaLang-source`**, це звучить як крутий концепт!
+- Які ідеї або емодзі ви планували використати?
+- Наприклад, які емодзі/слова для типів, для `if/else`, для `mut`, для порівняння чи виходу? 
+
+Поділіться вашим баченням — і я допоможу сформувати з нього строгу й красиву EBNF-граматику для [`grammar.ebnf`](file:///home/ubuntu/cs400/sigmaLang-source/grammar.ebnf).
+
+---
+
+User:
+окей. а таке питання я понапридумував прикольних слів, але ж якшо я напишу в граматику слово сігма замість "i64" можна ж заплутатись
+
+Model:
+Це чудове і дуже слушне запитання! Щоб не заплутатися ні вам при написанні коду, ні викладачу при перевірці, у компіляторах є стандартний прийом: **розділення зовнішнього синтаксису (те, що в коді) та внутрішнього змісту (AST)**.
+
+Ось як це вирішується на трьох рівнях:
+
+---
+
+### 1. У `grammar.ebnf` — зрозумілі назви правил
+В EBNF назва правила (зліва) описує технічну суть, а в лапках (справа) — ваше авторське слово чи емодзі. Наприклад:
+```ebnf
+type = i32_type | i64_type | bool_type ;
+
+i32_type  = "beta" ;       (* аналог i32 *)
+i64_type  = "sigma" ;      (* аналог i64, або "gigachad" *)
+bool_type = "based" ;      (* аналог bool *)
+```
+Будь-хто, хто читає граматику, одразу бачить: правило називається `i64_type`, а ключове слово в програмі — `"sigma"`.
+
+---
+
+### 2. У лексері — чіткі типи токенів (`TokenKind`)
+Лексер зчитує з тексту слово `"sigma"`, але видає токен із суворим внутрішнім типом:
+```python
+Token(kind=TokenKind.TYPE_I64, text="sigma", line=1, column=5)
+```
+Завдяки цьому в парсері вам уже байдуже, як це слово пишеться — ви просто перевіряєте `token.kind == TokenKind.TYPE_I64`. Плутанини в логіці не буде взагалі.
+
+---
+
+### 3. У AST — стандартні поля
+Коли парсер будує вузол оголошення змінної `DeclNode`, він зберігає канонічний тип (наприклад, `type_name="i64"` або `"sigma (i64)"`), а для виводу `--ast` можна друкувати зрозумілий для тестів формат:
+```
+Decl x i64 mut
+```
+(або `Decl x sigma mut`, це як ми з вами вирішимо для виводу `--ast`).
+
+---
+
+### Як можна обіграти концепт `sigmaLang`?
+Щоб синтаксис був водночас стильним і легко запам'ятовувався:
+
+1. **Типи:**
+   - `beta` (або `📦` / `🧒`) $\rightarrow$ аналог `i32`
+   - `sigma` (або `🗿` / `🗿_i64`) $\rightarrow$ аналог `i64`
+   - `based` (або `💡`) $\rightarrow$ аналог `bool`
+
+2. **Булеві літерали:**
+   - `true` $\rightarrow$ `real` (або `👍` / `🗿` / `win`)
+   - `false` $\rightarrow$ `fake` (або `👎` / `🤡` / `loss`)
+
+3. **Змінні та мутабельність:**
+   - Константа: `locked` (або `🔒`)
+   - Змінювана (`mut`): `grind` (або `✏️` / `flex`)
+
+4. **Розгалуження (`if / else`):**
+   - `check` або `sus` $\rightarrow$ `if`
+   - `otherwise` або `cringe` $\rightarrow$ `else`
+
+5. **Емодзі (обов'язкова вимога ТЗ!):**
+   - Наприклад, емодзі для операторів порівняння та присвоєння:
+     - Присвоєння: `👉` або `:=`
+     - Рівність `==`: `🤝` (або `⚖️`)
+     - Нерівність `!=`: `💔` (або `🚫`)
+
+Які саме слова чи емодзі ви вже понапридумували? Напишіть ваш список, і ми розкладемо їх у чітку систему!
+
+---
+
+User:
+окееей. але ж файл той що в практиці він за іншим принципом написаний. можеш тоді написати мені базовий якийсь скеффолд нижче в @[cs400-course-repo-vkatsel/grammar.ebnf]
+
+Model:
+Я записав базовий скеффолд граматики прямо у ваш файл курсового проєкту: [`sigmaLang-source/grammar.ebnf`](file:///home/ubuntu/cs400/sigmaLang-source/grammar.ebnf) *(ми пишемо саме туди, щоб не зачіпати репозиторій практик).*
+
+Він побудований **за тим самим принципом і нотацією (`::=`, `{ ... }`, `[ ... ]`), що й у практиках**, але розширений під усі обов'язкові вимоги Stage 1:
+
+```ebnf
+(* Grammar for sigmaLang - Project Stage 1 *)
+(* Languages and Compilers Design *)
+
+program      ::= { statement } ;
+
+statement    ::= decl | assign | if_stmt ;
+
+(* Declarations: constants, mutable variables, and immutable variables *)
+decl         ::= var_kind type ident ":=" expr ;
+var_kind     ::= "const" | "mut" | "let" ;
+
+type         ::= i32_type | i64_type | bool_type ;
+i32_type     ::= "beta"  | "📦" ;
+i64_type     ::= "sigma" | "🗿" ;
+bool_type    ::= "based" | "💡" ;
+
+(* Assignment: only allowed for mutable variables *)
+assign       ::= ident ( ":=" | "👉" ) expr ;
+
+(* If-Else block: requires at least one statement in each block *)
+if_stmt      ::= "if" expr "{" statement { statement } "}" [ "else" "{" statement { statement } "}" ] ;
+
+(* Expressions *)
+expr         ::= comp_expr ;
+
+comp_expr    ::= arith_expr [ comp_op arith_expr ] ;
+comp_op      ::= "==" | "!=" | "🤝" | "💔" ;
+
+arith_expr   ::= term { add_op term } ;
+add_op       ::= "+" | "-" | "➕" | "➖" ;
+
+term         ::= factor { mul_op factor } ;
+mul_op       ::= "*" | "✖️" ;
+
+factor       ::= number | bool_lit | ident | "(" expr ")" ;
+bool_lit     ::= "true" | "false" | "real" | "fake" | "👍" | "👎" ;
+
+number       ::= digit { digit } ;
+ident        ::= letter { letter | digit | "_" } ;
+```
+
+---
+
+### Як це зіставляється з вимогами ТЗ:
+
+1. **`decl`**: підтримує константи (`const`), змінювані змінні (`mut`) та незмінні змінні (`let`).
+2. **`type`**:
+   - `beta` / `📦` $\rightarrow$ аналог `i32`
+   - `sigma` / `🗿` $\rightarrow$ аналог `i64`
+   - `based` / `💡` $\rightarrow$ аналог `bool`
+3. **`assign`**: присвоєння через `:=` або емодзі `👉`.
+4. **`if_stmt`**: конструкція `statement { statement }` гарантує, що всередині `{ ... }` обов'язково є **як мінімум один оператор** (як того вимагає умова ТЗ: `stmt+`), а `[ "else" ... ]` робить блок `else` опціональним.
+5. **Оператори порівняння**: як текстові `==`, `!=`, так і емодзі `🤝`, `💔`.
+
+---
+
+Подивіться на цей скеффолд у [`sigmaLang-source/grammar.ebnf`](file:///home/ubuntu/cs400/sigmaLang-source/grammar.ebnf). 
+Які ключові слова чи емодзі ви хотіли б замінити, додати чи підкоригувати під ваш задум?
+
+---
+
+User:
+а якшо я хочу наприклад константи назвати сanon? я можу просто у var_kind так написати? а як інші поймуть шо канон це саме константа
+
+Model:
+Так, ви **можете просто написати `"canon"`**, і це насправді **геніальна назва** для константи у `sigmaLang`! («Канон» — це те, що залізно зафіксовано в лорі/всесвіті та не змінюється).
+
+Ось як інші (і викладач при перевірці) зрозуміють, що `canon` — це саме константа:
+
+---
+
+### 1. Через `grammar.ebnf` (коментарі)
+В EBNF ви можете прямо коло правила додати пояснювальний коментар:
+```ebnf
+decl       ::= var_kind type ident ":=" expr ;
+
+(* canon = compile-time constant, grind = mutable variable, let = immutable variable *)
+var_kind   ::= "canon" | "grind" | "let" ;
+```
+
+---
+
+### 2. Через `README.md` (обов'язкова вимога Task 6, оцінюється в 1 бал)
+У ТЗ написано:
+> *«`README.md` in the repository contains: a description of your language: its syntax and its features, with a short example for each...»*
+
+У README ви робите красивий розділ документації вашої мови, наприклад:
+| Ключове слово | Значення | Приклад |
+|---|---|---|
+| `canon` | Незмінна константа (`const`) | `canon sigma MAX_SCORE := 100` |
+| `grind` | Змінювана змінна (`mut`) | `grind beta counter := 0` |
+| `let` | Звичайна незмінна змінна | `let based is_ready := real` |
+
+---
+
+### 3. Через вивід AST (`--ast`)
+За ТЗ компілятор повинен друкувати технічні прапорці вузла AST:
+> *«The program outputs a description of the AST, including the flags and the fields of each node (mutable or not, which type, which operator)...»*
+
+Коли викладач запустить:
+```bash
+python3 compiler.py --ast program.txt
+```
+Він побачить у дереві стандартизований опис вузла:
+```
+Decl MAX_SCORE i64 const
+```
+Тобто компілятор всередині перетворює `canon` на чіткий прапорець `const` (або `mutable=False`), тож жодних сумнівів не виникне!
+
+---
+
+### До речі:
+Як вам тріада для змінних у `sigmaLang`:
+- `canon` — константа (`const`)
+- `grind` (або `flex`) — змінювана змінна (`mut`)
+- `let` (або `stay`) — звичайна змінна (immutable)? 
+
+Підходить такий варіант?
+
+---
+
+User:
+а нашо нам ще let?
+
+Model:
+Це випливає з дуже конкретного пункту в вимогах викладача (рядок 27 у [w04-project-stage1.md](file:///home/ubuntu/cs400/.agents/stage1-files/w04-project-stage1.md)):
+
+> *«Your language must support at least:*
+> *- constants, mutable variables and constant (immutable) variables;»*
+
+Чому викладач розділив їх на три категорії:
+
+1. **Константи (constants / literals)**:
+   Це фіксовані константні значення (числа `42`, булеві `real`/`fake`), або іменовані глобальні константи.
+2. **Змінювані змінні (mutable variables)**:
+   Змінні, значення яких можна перезаписувати в процесі роботи програми через оператор присвоєння `👉` (`grind x := 0; x 👉 x + 1`).
+3. **Незмінні змінні (constant / immutable variables)**:
+   Змінні, які створюються під час виконання (наприклад, результат обчислення виразу), але їх **заборонено модифікувати** після ініціалізації! Якщо спробувати зробити `👉` для такої змінної — компілятор викине помилку. (Це як у Rust: за замовчуванням `let x = 5` незмінна, а `let mut x = 5` — змінювана).
+
+---
+
+### Як це зробити красиво в синтаксисі (без зайвих слів)?
+
+Вам не обов'язково мати три окремих слова на кшталт `let`! Можна зробити так само елегантно, як було у практиках:
+
+#### Варіант А (за замовчуванням незмінна, як у практиках):
+- **Незмінна змінна (immutable):** просто тип і ім'я (без жодних додаткових слів):
+  ```
+  beta x := a + b
+  ```
+  *(Вона обчислилася, але змінити її через `👉` не можна).*
+- **Змінювана змінна (mutable):** з ключовим словом `grind` (або `flex` / `mut`):
+  ```
+  grind beta counter := 0
+  ```
+  *(Її можна змінювати: `counter 👉 counter + 1`).*
+- **Константа (constant):** зі словом `canon`:
+  ```
+  canon beta MAX := 100
+  ```
+
+#### Варіант Б (з явним словом):
+- `canon` — константа
+- `stay` (або `lock`) — незмінна змінна
+- `grind` — змінювана змінна
+
+Варіант **А** найприродніший і найлаконічніший — не треба писати зайве `let`, якщо змінна просто створюється як `beta x := 10`.
+
+Як вам варіант **А**?
+
+---
+
+User:
+так я шось понаписував але я заплутався шо ще мені потрібно і чи правильно в мене зараз
+
+Model:
+Вийшов **просто неймовірний і дуже стильний синтаксис!** 🔥
+`npc` (i32), `sigma` (i64), `take` (bool), `is_this_real` / `nah` (if/else), `hot` (true), `cringe` (false) та емодзі `👈🏻` — це ідеально відповідає духу назви `sigmaLang` та критерію креативності завдання!
+
+Але в самій EBNF-структурі є кілька технічних конфліктів та моментів, які варто підправити.
+
+---
+
+### Що зараз треба виправити:
+
+#### 1. Дублювання правила `expr` (головна помилка)
+У вас правило `expr` визначено двічі:
+- Рядок 22: `expr ::= comp_expr ;`
+- Рядок 29: `expr ::= arith [ ( "==" | "!=" ) arith ] ;`
+
+В EBNF одне правило не може мати два різні визначення. Достатньо залишити одне:
+```ebnf
+expr   ::= arith [ ( "==" | "!=" ) arith ] ;
+```
+*(а рядок 22 видалити).*
+
+---
+
+#### 2. Чи обов'язковий `exit` у кінці програми?
+У рядку 4 написано:
+```ebnf
+program ::= { statement } exit ;
+```
+У Практиці 4 викладач вимагав `exit` через специфіку генерації LLVM IR. 
+Але для **курсового проєкту (Stage 1)** обов'язкового `exit` у ТЗ немає! 
+Якщо ви залишите його як обов'язковий у кінці `program`, то **кожен тест** (навіть маленький приклад на 1 рядок) змушений буде закінчуватися словом `exit`.
+
+**Як краще зробити:**
+- Зробити `exit` звичайним statement (опціональним оператором всередині програми), або взагалі:
+```ebnf
+program ::= { statement } ;
+```
+*(а якщо хочете оператор виходу, додати його в `statement ::= decl | assign | if_stmt | exit_stmt ;`)*.
+
+---
+
+#### 3. Що означає трійка `var_kind`?
+У вас:
+```ebnf
+var_kind ::= "canon" | "yap" | "canonmaxing" ;
+```
+У ТЗ є вимога підтримувати:
+1. Константи (constants)
+2. Змінювані змінні (mutable)
+3. Незмінні змінні (immutable)
+
+Давайте зафіксуємо їх значення (щоб у коді та тестах не було сумнівів):
+- `canon` — константа (`const`)
+- `yap` — змінювана змінна (`mut`)? (бо япер постійно міняє свою думку 😆)
+- `canonmaxing` — незмінна змінна (`immutable`)?
+Правильно я зрозумів ваш задум?
+
+---
+
+#### 4. Більше емодзі (вимога ТЗ для максимального балу)
+У завданні сказано:
+> *«To add creativity: use emojis for operators, type names or other keywords;»*
+
+Ви вже додали `👈🏻` для присвоєння! Можна також додати емодзі як альтернативи до порівнянь або типів, наприклад:
+```ebnf
+i32_type  ::= "npc" | "👶" ;
+i64_type  ::= "sigma" | "🗿" ;
+bool_type ::= "take" | "💡" ;
+```
+або для порівняння:
+```ebnf
+comp_op   ::= "==" | "!=" | "🤝" | "💔" ;
+```
+Це додасть бонусні бали за креативність і покаже роботу лексера з UTF-8 емодзі.
+
+---
+
+#### 5. Дужки у виразах `( expr )`
+У `factor` варто додати дужки `( expr )`, щоб можна було писати `(a + b) * c`:
+```ebnf
+factor ::= number | "hot" | "cringe" | ident | "(" expr ")" ;
+```
+
+---
+
+### Як виглядатиме виправлена та готова граматика:
+
+```ebnf
+(* Grammar for sigmaLang - Project Stage 1 *)
+(* Languages and Compilers Design *)
+
+program      ::= { statement } ;
+
+statement    ::= decl | assign | if_stmt | exit_stmt ;
+
+(* Declarations: constants (canon), mutable (yap), immutable (canonmaxing) *)
+decl         ::= var_kind type ident ":=" expr ;
+var_kind     ::= "canon" | "yap" | "canonmaxing" ;
+
+type         ::= i32_type | i64_type | bool_type ;
+i32_type     ::= "npc"   | "👶" ;
+i64_type     ::= "sigma" | "🗿" ;
+bool_type    ::= "take"  | "💡" ;
+
+(* Assignment: only allowed for mutable (yap) variables *)
+assign       ::= ident ( ":=" | "👈🏻" ) expr ;
+
+(* If-Else block: requires at least one statement in each block *)
+if_stmt      ::= "is_this_real" expr "{" statement { statement } "}" [ "nah" "{" statement { statement } "}" ] ;
+
+exit_stmt    ::= "exit" factor ;
+
+(* Expressions *)
+expr         ::= arith [ ( "==" | "!=" | "🤝" | "💔" ) arith ] ;
+
+arith        ::= term { ( "+" | "-" ) term } ;
+
+term         ::= factor { "*" factor } ;
+
+factor       ::= number | "hot" | "cringe" | ident | "(" expr ")" ;
+```
+
+Як вам такий фінальний варіант? Чи хочете щось підкоригувати?
+
+---
+
+User:
+можеш будь ласка внести зміни?
+
+Model:
+Зміни внесено у файл [`sigmaLang-source/grammar.ebnf`](file:///home/ubuntu/cs400/sigmaLang-source/grammar.ebnf).
+
+Ось повна, чиста і формально правильна граматика для вашої мови:
+
+```ebnf
+(* Grammar for sigmaLang - Project Stage 1 *)
+(* Languages and Compilers Design *)
+
+program      ::= { statement } ;
+
+statement    ::= decl | assign | if_stmt | exit_stmt ;
+
+(* Declarations: constants (canon), mutable variables (yap), immutable variables (canonmaxing) *)
+decl         ::= var_kind type ident ":=" expr ;
+var_kind     ::= "canon" | "yap" | "canonmaxing" ;
+
+type         ::= i32_type | i64_type | bool_type ;
+i32_type     ::= "npc"   | "👶" ;
+i64_type     ::= "sigma" | "🗿" ;
+bool_type    ::= "take"  | "💡" ;
+
+(* Assignment: only allowed for mutable (yap) variables *)
+assign       ::= ident ( ":=" | "👈🏻" ) expr ;
+
+(* If-Else block: requires at least one statement in each block *)
+if_stmt      ::= "is_this_real" expr "{" statement { statement } "}" [ "nah" "{" statement { statement } "}" ] ;
+
+exit_stmt    ::= "exit" factor ;
+
+(* Expressions *)
+expr         ::= arith [ comp_op arith ] ;
+comp_op      ::= "==" | "!=" | "🤝" | "💔" ;
+
+arith        ::= term { add_op term } ;
+add_op       ::= "+" | "-" ;
+
+term         ::= factor { mul_op factor } ;
+mul_op       ::= "*" ;
+
+factor       ::= number | bool_lit | ident | "(" expr ")" ;
+bool_lit     ::= "hot" | "cringe" ;
+
+number       ::= digit { digit } ;
+ident        ::= letter { letter | digit | "_" } ;
+```
+
+---
+
+### Що ми зробили:
+1. **Виправили дублювання `expr`** — тепер це чітка дворівнева ієрархія (порівняння $\rightarrow$ арифметика $\rightarrow$ множення $\rightarrow$ фактори).
+2. **Зробили `exit` опціональним оператором** — програма може складатись із будь-якої послідовності виразів/блоків, а `exit` можна використовувати як один із можливих операторів.
+3. **Додали емодзі-альтернативи** для типів (`👶`, `🗿`, `💡`) та операторів порівняння (`🤝`, `💔`), поряд з вашим присвоєнням `👈🏻`.
+4. **Додали дужки `( expr )`** для групування у виразах.
+5. **Зафіксували чітку семантику:**
+   - `canon` — незмінна константа (`const`).
+   - `yap` — змінювана змінна (`mut`).
+   - `canonmaxing` — незмінна змінна (`immutable`).
+   - `hot` / `cringe` — булеві літерали `true` / `false`.
+
+**Task 2 (Дизайн мови та EBNF)** тепер повністю готовий!
+
+Чи переходимо до **Task 4 — реалізації AST-вузлів, побайтового лексера та парсера** всередині [`src/`](file:///home/ubuntu/cs400/sigmaLang-source/src)?
+
+---
