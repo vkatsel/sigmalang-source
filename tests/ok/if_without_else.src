@@ -1,0 +1,5 @@
+# Test if block without else
+is_this_real hot {
+    yap npc x 👈🏻 1
+    x 👈🏻 2
+}

@@ -1,0 +1,9 @@
+Program
+  If
+    Condition
+      Bool hot
+    Then
+      Decl x npc yap
+        1
+      Assign x
+        2

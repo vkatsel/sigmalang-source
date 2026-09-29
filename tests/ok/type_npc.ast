@@ -1,0 +1,5 @@
+Program
+  Decl min_val npc canon
+    0
+  Decl max_val npc canon
+    2147483647
