@@ -1,0 +1,44 @@
+{
+  "name": "sigmalang-support",
+  "displayName": "sigmalang Language Support",
+  "description": "Language support, syntax highlighting, and emoji snippets for sigmalang",
+  "version": "0.1.0",
+  "publisher": "vkatsel",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "sigmalang",
+        "aliases": [
+          "sigmalang",
+          "SigmaLang"
+        ],
+        "extensions": [
+          ".src",
+          ".sigma",
+          ".sigmalang"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "sigmalang",
+        "scopeName": "source.sigmalang",
+        "path": "./syntaxes/sigmalang.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "sigmalang",
+        "path": "./snippets/snippets.json"
+      }
+    ]
+  }
+}

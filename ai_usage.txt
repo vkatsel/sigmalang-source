@@ -1401,3 +1401,153 @@ Model:
 Тепер картина склалася, чи залишилися запитання по якомусь із кроків?
 
 ---
+
+User:
+окей гуд. зааменди останній коміт змінами в аі юзеджі і на цьому я так розумію 1 стейдж - виконаний?
+
+Model:
+Останній коміт успішно зааменджено:
+`d5cdc4d docs(ai_usage): update AI usage log for Stage 1`  
+*(Робоче дерево повністю чисте).*
+
+---
+
+### Так, Stage 1 виконано на всі 100%! 🎉
+
+Звіримося з офіційним чеклистом завдань із [w04-project-stage1.md](file:///home/ubuntu/cs400/.agents/stage1-files/w04-project-stage1.md):
+
+| Таск | Що вимагалося | Статус |
+|---|---|---|
+| **TASK 1** | Наявність `ai_usage.txt` з історією використання ШІ | ✅ **Виконано** (ведеться автоматично хуком, актуалізовано й закомічено) |
+| **TASK 2** (4 pt) | Дизайн власної мови з емодзі та повний опис у `grammar.ebnf` | ✅ **Виконано** (`npc`, `sigma`, `take`, `canon`/`yap`/`canonmaxing`, `👈🏻`, `🤝`, `💔`, `is_this_real` / `nah`) |
+| **TASK 3** (0 pt) | VS Code розширення | ⏭️ Опціонально (0 балів) |
+| **TASK 4** (5 pt) | Побайтовий лексер над UTF-8, рекурсивний парсер AST, CLI `compiler.py --ast`, діагностика помилок | ✅ **Виконано** ([`src/lexer.py`](file:///home/ubuntu/cs400/sigmaLang-source/src/lexer.py), [`src/parser.py`](file:///home/ubuntu/cs400/sigmaLang-source/src/parser.py), [`compiler.py`](file:///home/ubuntu/cs400/sigmaLang-source/compiler.py)) |
+| **TASK 5** (3 pt) | $\ge 15$ happy path + $\ge 15$ error scenarios + скрипт запуску | ✅ **Виконано** (**34 тести** у [`tests/ok/`](file:///home/ubuntu/cs400/sigmaLang-source/tests/ok) та [`tests/err/`](file:///home/ubuntu/cs400/sigmaLang-source/tests/err), скрипт [`run_tests.sh`](file:///home/ubuntu/cs400/sigmaLang-source/run_tests.sh) — 34/34 passing) |
+| **TASK 6** (1 pt) | `README.md` з описом мови, синтаксису, інструкціями збірки та тестів | ✅ **Виконано** ([`README.md`](file:///home/ubuntu/cs400/sigmaLang-source/README.md)) |
+| **Submission** (2 pt) | Окрема гілка `stage1`, реальні коміти, code style | ✅ **Виконано** (4 послідовні чисті коміти у `stage1`, сучасний Python 3.12) |
+
+---
+
+### Останні кроки для сабміту (згідно з регламентом):
+
+1. **Якщо репозиторій ще не запушено на GitHub:**
+   ```bash
+   git remote add origin <URL_вашого_репозиторію_на_GitHub>
+   git push -u origin stage1
+   ```
+2. **Додати викладача:**
+   - На GitHub у налаштуваннях репозиторію (*Settings $\rightarrow$ Collaborators*) додати `vovaskochko` як колаборатора.
+3. **Створити Pull Request:**
+   - Відкрити PR з гілки `stage1` у `main` та призначити `vovaskochko` рев'юером *(не мерджити до закінчення перевірки!)*.
+4. **Здати в Moodle:**
+   - Посилання на репозиторій.
+   - Посилання на відкритий Pull Request.
+   - Прикріпити файл [`ai_usage.txt`](file:///home/ubuntu/cs400/sigmaLang-source/ai_usage.txt) (він також здубльований у [`/.agents/stage1-files/ai_usage.txt`](file:///home/ubuntu/cs400/.agents/stage1-files/ai_usage.txt)).
+
+Чудова робота! Ви повністю готові до здачі Stage 1. 🚀
+
+---
+
+User:
+а до речі про третій таск, ми його так і не зробили. що для цього потрібнО?
+
+Model:
+Ось що говорить ТЗ про Task 3:
+> *«To make emojis and other symbols easier to type, create a simple VS Code extension similar to VSCodeKaguLangSupport. It should treat your emojis as keywords and offer completion or replacement. No points; link it from the README if you make one.»*
+
+Хоч він і дає 0 балів, але це чудовий бонус, який дуже подобається викладачам (особливо з посиланням у `README.md`).
+
+---
+
+### Що потрібно для такого розширення?
+
+Для базової підтримки мови в VS Code (автодоповнення емодзі + підсвітка синтаксису) навіть не обов'язково писати код на TypeScript чи піднімати важкий Node.js — це робиться **декларативно через конфігураційні JSON-файли**:
+
+1. **`package.json`** — маніфест розширення:
+   - реєструє мову `sigmalang`;
+   - асоціює розширення файлів `.src` та `.sigma`;
+   - підключає сніпети та граматику підсвітки.
+
+2. **`snippets/snippets.json`** — автодоповнення (Completion / Snippets):
+   - пишете `hand` або `assign` або `<-` $\rightarrow$ VS Code пропонує вставити `👈🏻`;
+   - пишете `eq` $\rightarrow$ пропонує `🤝`;
+   - пишете `neq` $\rightarrow$ пропонує `💔`;
+   - пишете `if` $\rightarrow$ підставляє готовий каркас:
+     ```sigmalang
+     is_this_real cond {
+         stmt
+     }
+     ```
+
+3. **`syntaxes/sigmalang.tmLanguage.json`** — TextMate граматика (Syntax Highlighting):
+   - підсвічує ключові слова (`canon`, `yap`, `is_this_real` тощо) кольором ключових слів;
+   - підсвічує типи (`npc`, `sigma`, `take`);
+   - підсвічує коментарі `#` зеленим кольором;
+   - підсвічує числа та булеві `hot`/`cringe`.
+
+4. **`language-configuration.json`**:
+   - визначає правила коментарів (`#`) та автозакриття фігурних дужок `{}`.
+
+---
+
+### Де його покласти та як підключити:
+1. Створити теку [`sigmaLang-source/vscode-sigmalang-support/`](file:///home/ubuntu/cs400/sigmaLang-source).
+2. Залінковати її в `~/.vscode/extensions/sigmalang-support` — і у вашому поточному VS Code файли `.src` **одразу почнуть красиво підсвічуватися кольорами, а емодзі будуть підказуватися при вводі!**
+3. Додати один рядок у `README.md`:
+   > *«VS Code support with syntax highlighting and emoji snippets is available in `/vscode-sigmalang-support`»*.
+
+Хочете, щоб я створив це розширення просто зараз? Це займе кілька хвилин.
+
+---
+
+User:
+давай створи. і ніби ж можна зробити так щоб вс код за готовим файлом цей екстеншн додавав чи шось таке. треба якось це розумно зробити і прописати. також у нас все ж таки sigmaLang чи sigmalang? я шось схиляюсь до того шо треба мабуть привести до ловеркейс формату
+
+Model:
+### 1. Назва: `sigmalang`
+Повністю підтримую! Нижній регістр **`sigmalang`** — це сучасний стандарт для мов програмування та ідентифікаторів у VS Code (як `python`, `rust`, `zig`):
+- Назву папки оновлено на [`/home/ubuntu/cs400/sigmalang-source`](file:///home/ubuntu/cs400/sigmalang-source);
+- Конфігурації логування та цілі автоматично переналаштовані на `sigmalang-source`;
+- Усі заголовки та опис мови приведені до `sigmalang`.
+
+---
+
+### 2. Task 3: Розширення для VS Code
+Розширення повністю створено та упаковано у теці [`vscode-sigmalang-support/`](file:///home/ubuntu/cs400/sigmalang-source/vscode-sigmalang-support):
+
+1. **Підсвітка синтаксису ([`syntaxes/sigmalang.tmLanguage.json`](file:///home/ubuntu/cs400/sigmalang-source/vscode-sigmalang-support/syntaxes/sigmalang.tmLanguage.json)):**
+   - Ключові слова (`canon`, `yap`, `canonmaxing`, `is_this_real`, `nah`, `exit`);
+   - Типи (`npc`, `sigma`, `take`);
+   - Булеві константи (`hot`, `cringe`);
+   - Оператори та емодзі (`👈🏻`, `:=`, `🤝`, `💔`, `==`, `!=`, `+`, `-`, `*`);
+   - Коментарі `#` та числа.
+
+2. **Сніпети для швидкого вводу емодзі ([`snippets/snippets.json`](file:///home/ubuntu/cs400/sigmalang-source/vscode-sigmalang-support/snippets/snippets.json)):**
+   - Набираєте `assign`, `hand` або `<-` $\rightarrow$ вставляється `👈🏻`;
+   - `eq` або `shake` $\rightarrow$ `🤝`;
+   - `neq` або `broken` $\rightarrow$ `💔`;
+   - `canon`, `yap`, `canonmaxing`, `if`, `ifelse` $\rightarrow$ готові шаблони конструкцій.
+
+3. **Готовий пакет для встановлення в один клік ([`sigmalang-support-0.1.0.vsix`](file:///home/ubuntu/cs400/sigmalang-source/vscode-sigmalang-support/sigmalang-support-0.1.0.vsix)):**
+   Я запакував розширення у стандартний інсталяційний пакет `.vsix`!
+   **Як встановити у VS Code:**
+   1. Відкрити панель розширень (`Ctrl+Shift+X`).
+   2. Натиснути на три крапки `...` у верхньому правому куті панелі.
+   3. Вибрати **Install from VSIX...**.
+   4. Обрати файл `vscode-sigmalang-support/sigmalang-support-0.1.0.vsix`.
+   *(І файли `.src` / `.sigma` миттєво підхоплять підсвітку та сніпети!)*
+
+4. **Документація:**
+   Розширення описано в [`vscode-sigmalang-support/README.md`](file:///home/ubuntu/cs400/sigmalang-source/vscode-sigmalang-support/README.md) та залінковано в головному [`README.md`](file:///home/ubuntu/cs400/sigmalang-source/README.md) проєкту, як того вимагає ТЗ.
+
+---
+
+### 3. Стан репозиторію
+- Усі 34 тести проходять (`./run_tests.sh`);
+- Зміни закомічено:
+  `33a7692 feat(extension): implement Task 3 VS Code extension and VSIX package for sigmalang`
+- Робоче дерево повністю чисте.
+
+Тепер **абсолютно всі 6 завдань Stage 1** (включно з опціональним Task 3) закриті під ключ! 🚀
+
+---

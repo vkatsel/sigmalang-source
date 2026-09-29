@@ -1,4 +1,4 @@
-# sigmaLang
+# sigmalang
 
 A custom programming language designed for **Stage 1** of the Languages and Compilers Design course. 
 Featuring brainrot/sigma-themed keywords, UTF-8 multi-byte emoji operators, and explicit immutability semantics.
@@ -98,3 +98,11 @@ Run all tests with:
 ```bash
 ./run_tests.sh
 ```
+
+---
+
+## 5. VS Code Extension (Task 3)
+
+A companion Visual Studio Code extension providing syntax highlighting and emoji snippets is located in [`./vscode-sigmalang-support`](./vscode-sigmalang-support):
+- Pre-packaged VSIX package ready to install: [`vscode-sigmalang-support/sigmalang-support-0.1.0.vsix`](./vscode-sigmalang-support/sigmalang-support-0.1.0.vsix).
+- Install directly via VS Code: *Extensions view (`Ctrl+Shift+X`) → `...` (top-right menu) → Install from VSIX...*
