@@ -1,18 +1,19 @@
 (* Grammar for sigmaLang - Project Stage 1 *)
 (* Languages and Compilers Design *)
+(* Comments start with '#' and extend to the end of the line *)
 
 program      ::= { statement } ;
 
 statement    ::= decl | assign | if_stmt | exit_stmt ;
 
 (* Declarations: constants (canon), mutable variables (yap), immutable variables (canonmaxing) *)
-decl         ::= var_kind type ident ":=" expr ;
+decl         ::= var_kind type ident (":=" | "👈🏻") expr ;
 var_kind     ::= "canon" | "yap" | "canonmaxing" ;
 
 type         ::= i32_type | i64_type | bool_type ;
-i32_type     ::= "npc"   | "👶" ;
-i64_type     ::= "sigma" | "🗿" ;
-bool_type    ::= "take"  | "💡" ;
+i32_type     ::= "npc" ;
+i64_type     ::= "sigma" ;
+bool_type    ::= "take" ;
 
 (* Assignment: only allowed for mutable (yap) variables *)
 assign       ::= ident ( ":=" | "👈🏻" ) expr ;
