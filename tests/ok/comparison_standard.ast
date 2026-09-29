@@ -1,0 +1,9 @@
+Program
+  Decl eq_res take canon
+    BinOp ==
+      5
+      5
+  Decl neq_res take canon
+    BinOp !=
+      5
+      10

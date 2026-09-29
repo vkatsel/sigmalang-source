@@ -1,0 +1,5 @@
+Program
+  Decl total sigma yap
+    50
+  Assign total
+    100

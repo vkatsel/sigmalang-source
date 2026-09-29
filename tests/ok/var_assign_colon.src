@@ -1,0 +1,3 @@
+# Test assignment with standard := operator
+yap sigma total := 50
+total := 100

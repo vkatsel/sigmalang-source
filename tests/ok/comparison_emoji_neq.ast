@@ -1,0 +1,5 @@
+Program
+  Decl res take canon
+    BinOp 💔
+      10
+      20

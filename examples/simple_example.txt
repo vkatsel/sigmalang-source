@@ -1,0 +1,9 @@
+yap sigma x := 5;
+yap sigma y := 10;
+
+is_this_real (x == y) {
+    exit hot;
+} 
+nah {
+    exit cringe;
+}

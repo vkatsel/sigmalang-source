@@ -1,0 +1,5 @@
+Program
+  Decl count npc yap
+    0
+  Assign count
+    5

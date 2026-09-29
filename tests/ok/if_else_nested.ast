@@ -1,0 +1,16 @@
+Program
+  If
+    Condition
+      Bool hot
+    Then
+      If
+        Condition
+          BinOp 💔
+            5
+            10
+        Then
+          Decl status npc yap
+            1
+    Else
+      Exit
+        Bool cringe

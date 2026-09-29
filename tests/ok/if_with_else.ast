@@ -1,0 +1,12 @@
+Program
+  If
+    Condition
+      BinOp 🤝
+        10
+        20
+    Then
+      Exit
+        Bool cringe
+    Else
+      Exit
+        Bool hot
