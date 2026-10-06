@@ -1,0 +1,19 @@
+Program
+  Decl score npc yap
+    10
+  If
+    Condition
+      Bool hot
+    Then
+      Assign score
+        BinOp +
+          Var score
+          5
+  If
+    Condition
+      BinOp 🤝
+        Var score
+        15
+    Then
+      Exit
+        Var score

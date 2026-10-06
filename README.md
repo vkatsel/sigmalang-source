@@ -39,7 +39,15 @@ is_this_real hot {
 }
 ```
 
-### 1.5 Syntax Examples
+### 1.5 Postfix Conditional Statement (Unique Syntax Element)
+Statements can optionally be suffixed with a trailing `is_this_real` modifier condition:
+```sigmalang
+score 👈🏻 score + 5 is_this_real hot
+exit score is_this_real score 🤝 15
+```
+The statement executes only if the condition evaluates to true (`hot`).
+
+### 1.6 Syntax Examples
 
 | Feature | Code Example |
 |---|---|
@@ -50,6 +58,7 @@ is_this_real hot {
 | Arithmetic & Parentheses | `canon npc res 👈🏻 (10 + 5) * 2` |
 | Comparison | `canon take valid 👈🏻 score 🤝 500` |
 | Conditional block | `is_this_real valid { exit score }` |
+| Postfix modifier | `exit score is_this_real score 🤝 15` |
 | Exit statement | `exit 0` |
 
 ---
@@ -90,7 +99,7 @@ compilation error: line 1:16: integer literal overflow: '2147483648' exceeds 32-
 
 ## 4. How to Run the Tests
 
-The test suite contains **34 automated tests** (18 happy path and 16 error scenarios covering edge cases and boundary conditions):
+The test suite contains **36 automated tests** (19 happy path and 17 error scenarios covering edge cases and boundary conditions):
 - `tests/ok/`: Valid programs verified against expected `.ast` outputs.
 - `tests/err/`: Invalid programs verified against expected `.err` compiler diagnostic messages.
 

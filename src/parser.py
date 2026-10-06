@@ -161,17 +161,31 @@ class Parser:
 
     def parse_statement(self) -> StatementNode:
         tok = self._peek()
+        stmt: StatementNode
         match tok.kind:
             case TokenKind.CANON | TokenKind.YAP | TokenKind.CANONMAXING:
-                return self.parse_decl()
+                stmt = self.parse_decl()
             case TokenKind.IDENT:
-                return self.parse_assign()
+                stmt = self.parse_assign()
             case TokenKind.IS_THIS_REAL:
                 return self.parse_if()
             case TokenKind.EXIT:
-                return self.parse_exit()
+                stmt = self.parse_exit()
             case _:
                 raise ParserError(tok.line, tok.col, f"unexpected token '{tok.text or tok.kind}' at start of statement")
+
+        if self._peek().kind == TokenKind.IS_THIS_REAL:
+            if_tok = self._eat(TokenKind.IS_THIS_REAL)
+            cond = self.parse_expr()
+            stmt = IfStmtNode(
+                line=if_tok.line,
+                col=if_tok.col,
+                cond=cond,
+                then_body=[stmt],
+                else_body=None,
+            )
+
+        return stmt
 
     def parse_decl(self) -> DeclNode:
         kind_tok = self._peek()
