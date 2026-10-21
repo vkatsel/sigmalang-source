@@ -1,0 +1,65 @@
+{
+  "Emoji Assignment Operator": {
+    "prefix": ["assign", "hand", "<-", "point"],
+    "body": ["👈🏻"],
+    "description": "Insert emoji assignment operator 👈🏻"
+  },
+  "Emoji Equality Operator": {
+    "prefix": ["eq", "shake", "agree"],
+    "body": ["🤝"],
+    "description": "Insert emoji equality operator 🤝"
+  },
+  "Emoji Inequality Operator": {
+    "prefix": ["neq", "broken", "heartbreak"],
+    "body": ["💔"],
+    "description": "Insert emoji inequality operator 💔"
+  },
+  "Canon Constant Declaration": {
+    "prefix": ["canon", "const"],
+    "body": [
+      "canon ${1|npc,sigma,take|} ${2:name} 👈🏻 ${3:value}"
+    ],
+    "description": "Declare an immutable compile-time constant"
+  },
+  "Yap Mutable Variable Declaration": {
+    "prefix": ["yap", "mut", "var"],
+    "body": [
+      "yap ${1|npc,sigma,take|} ${2:name} 👈🏻 ${3:value}"
+    ],
+    "description": "Declare a mutable variable"
+  },
+  "Canonmaxing Immutable Declaration": {
+    "prefix": ["canonmaxing", "let", "immut"],
+    "body": [
+      "canonmaxing ${1|npc,sigma,take|} ${2:name} 👈🏻 ${3:value}"
+    ],
+    "description": "Declare an immutable variable"
+  },
+  "If Statement": {
+    "prefix": ["if", "is_this_real"],
+    "body": [
+      "is_this_real ${1:condition} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Conditional if block"
+  },
+  "If-Else Statement": {
+    "prefix": ["ifelse", "ifnah"],
+    "body": [
+      "is_this_real ${1:condition} {",
+      "\t$2",
+      "} nah {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Conditional if-else block"
+  },
+  "Exit Statement": {
+    "prefix": ["exit"],
+    "body": [
+      "exit ${1:cringe}"
+    ],
+    "description": "Exit statement"
+  }
+}

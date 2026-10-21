@@ -1,0 +1,6 @@
+# Test if block immediately following declaration without semicolon
+yap npc x 👈🏻 10
+is_this_real x 🤝 10 {
+    exit 1
+}
+exit 0

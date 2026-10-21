@@ -1,0 +1,6 @@
+# Test if-else block
+is_this_real 10 🤝 20 {
+    exit cringe
+} nah {
+    exit hot
+}

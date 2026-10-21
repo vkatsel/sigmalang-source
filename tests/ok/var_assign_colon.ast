@@ -1,0 +1,5 @@
+Program
+  Decl total sigma yap
+    Number 50
+  Assign total
+    Number 100

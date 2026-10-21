@@ -1,0 +1,5 @@
+Program
+  Decl code npc canon
+    Number 42
+  Exit
+    Var code

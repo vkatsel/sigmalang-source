@@ -1,0 +1,2 @@
+# Test yap mutable variable declaration
+yap sigma y := 100

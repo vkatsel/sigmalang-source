@@ -1,0 +1,13 @@
+Program
+  Decl x npc yap
+    Number 10
+  If
+    Condition
+      BinOp 🤝
+        Var x
+        Number 10
+    Then
+      Exit
+        Number 1
+  Exit
+    Number 0

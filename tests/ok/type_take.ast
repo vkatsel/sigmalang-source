@@ -1,0 +1,5 @@
+Program
+  Decl is_based take canon
+    Bool hot
+  Decl is_cringe take canon
+    Bool cringe

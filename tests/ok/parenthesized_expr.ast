@@ -1,0 +1,9 @@
+Program
+  Decl val npc canon
+    BinOp *
+      BinOp +
+        Number 2
+        Number 3
+      BinOp -
+        Number 10
+        Number 4

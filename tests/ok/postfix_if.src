@@ -1,0 +1,4 @@
+# Test postfix fr modifier
+yap npc score 👈🏻 10
+score 👈🏻 score + 5 fr hot
+exit score fr score 🤝 15

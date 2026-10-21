@@ -1,0 +1,2 @@
+# Test arithmetic precedence: * binds tighter than + and -
+canon npc val 👈🏻 2 + 3 * 4 - 5 * 2

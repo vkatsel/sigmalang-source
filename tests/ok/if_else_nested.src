@@ -1,0 +1,8 @@
+# Test nested if-else blocks
+is_this_real hot {
+    is_this_real 5 💔 10 {
+        yap npc status 👈🏻 1
+    }
+} nah {
+    exit cringe
+}
