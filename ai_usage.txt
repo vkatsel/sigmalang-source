@@ -1817,3 +1817,198 @@ Model:
 - Всі 36 тестів проходять без помилок.
 
 ---
+
+User:
+привіт. маємо отакий фідбек: Submission format & code style — 2/2
+Language Design — 3/4: three kinds of names, emoji synonyms and comments are good. The postfix is_this_real makes the grammar ambiguous with the is_this_real block (-0.5), and the EBNF allows a postfix after an if, which the parser does not (-0.5).
+Lexer & Syntax Parser — 3.5/5: the parser fails on an ordinary program: a declaration followed by an is_this_real … { } block without ; gives unexpected token '{' at start of statement (-1). The node hierarchy is flat (StatementNode/ExprNode are type aliases, not classes); number literals are dumped without a node label (-0.5).
+Test cases — 3/3: 19 + 17, all green; no test puts an if after another statement, which hid the bug.
+README.md — 1/1
+Extra: a VS Code extension with highlighting and emoji snippets (+0.25).
+Total: 12.75/15 . треба поправити моменти
+
+Model:
+Давай детально розберемо фідбек викладача по кожному пункту, де було знято бали:
+
+---
+
+### Детальний аналіз фідбеку
+
+#### 1. Language Design (-1.0 pt):
+* **Амбігуіті (неоднозначність) граматики через постфіксний `is_this_real` (-0.5 pt):**
+  Коли парсер бачить:
+  ```sigmalang
+  yap npc a 👈🏻 1
+  is_this_real hot { ... }
+  ```
+  Чи це початок блоку `is_this_real ... { }`, чи це постфіксний модифікатор до `yap npc a 👈🏻 1 is_this_real hot`?
+  Оскільки крапка з комою в мові необов'язкова, граматика стає неоднозначною: після виразу `hot` парсер/граматика бачить `{`, але для постфіксного if тіло у фігурних дужках неприпустиме!
+  Парсер жадібно споживає `is_this_real hot` як постфікс до попереднього рядка `a 👈🏻 1`, а наступний рядок починається з `{ ... }`, що викликає помилку: `unexpected token '{' at start of statement`.
+* **Розбіжність EBNF та парсера (-0.5 pt):**
+  В `grammar.ebnf` було записано:
+  ```ebnf
+  statement ::= ( ( decl | assign | if_stmt | exit_stmt ) [ "is_this_real" expr ] ) [ ";" ] ;
+  ```
+  Тобто за EBNF дозволяється `if_stmt is_this_real expr`, чого в парсері немає (бо `parse_if()` повертається одразу і не перевіряє постфіксний `is_this_real`).
+
+---
+
+#### 2. Lexer & Syntax Parser (-1.5 pt):
+* **Падіння на звичайній програмі без `;` (-1.0 pt):**
+  Якщо написати оголошення, а в наступному рядку звичайний блок `is_this_real`:
+  ```sigmalang
+  yap npc x 👈🏻 10
+  is_this_real x 🤝 10 {
+      exit 1
+  }
+  ```
+  Через жадібний постфіксний `is_this_real` парсер вважає, що це `yap npc x 👈🏻 10 is_this_real x 🤝 10`, а потім бачить `{` і падає з:
+  `compilation error: ... unexpected token '{' at start of statement`.
+  
+  **Як це вирішити елегантно й однозначно?**
+  1. **Варіант А (Рекомендований для унікального синтаксису):** Використати окреме ключове слово / емодзі для однорядкового постфіксного модифікатора або вимагати чіткий синтаксис (наприклад, окреме brainrot-слово на зразок `fr` ("for real"), `ong` ("on god"), `is_it_real`, або дивитися lookahead на наявність `{` після умови). 
+     Але якщо подивитися глибше: якщо після умови `expr` іде `{`, це однозначно звичайний `if_stmt`! Якщо ж ми хочемо зберегти `is_this_real` і блоковий, і постфіксний — у LL(k) без роздільника рядка це неоднозначно. Проте найчистіший спосіб уникнути амбігуіті в граматиці:
+     - або для постфіксного if мати окреме ключове слово (наприклад, `fr` / `ong` / `real` / `lowkey`), яке в EBNF явно відрізняється від `is_this_real`;
+     - або в EBNF чітко розмежувати:
+       ```ebnf
+       simple_stmt ::= decl | assign | exit_stmt ;
+       statement   ::= ( simple_stmt [ "fr" expr ] | if_stmt ) [ ";" ] ;
+       ```
+       Це одразу знімає зауваження "EBNF allows postfix after an if" та "makes grammar ambiguous".
+     - або перевіряти перенесення рядка / роздільник. Але в EBNF першого варіанту (окреме слово, наприклад `fr` / `lowkey` абощо) взагалі немає жодної граматичної неоднозначності!
+
+* **Node hierarchy is flat (-0.5 pt):**
+  У тасці було:
+  > Use a **class hierarchy** for the AST nodes: `ASTNode`, `ProgramNode`, `StmtNode` with its statement classes, `ExprNode` with its expression classes, and so on.
+  
+  У нас зараз:
+  ```python
+  type StatementNode = DeclNode | AssignNode | IfStmtNode | ExitStmtNode
+  type ExprNode = BinOpNode | LiteralNode | VarNode
+  ```
+  Це `type alias`, а викладач вимагав справжню ООП-ієрархію класів:
+  ```python
+  class ASTNode: ...
+  class StmtNode(ASTNode): ...
+  class ExprNode(ASTNode): ...
+
+  class DeclNode(StmtNode): ...
+  class AssignNode(StmtNode): ...
+  class IfStmtNode(StmtNode): ...
+  class ExitStmtNode(StmtNode): ...
+
+  class BinOpNode(ExprNode): ...
+  class LiteralNode(ExprNode): ...
+  class VarNode(ExprNode): ...
+  ```
+* **Number literals are dumped without a node label (-0.5 pt):**
+  У `LiteralNode.dump()` зараз:
+  ```python
+  if isinstance(self.value, bool):
+      val_str = "hot" if self.value else "cringe"
+      return f"{sp}Bool {val_str}"
+  return f"{sp}{self.value}"  # просто '10' замість 'Number 10' чи 'Int 10' або 'Literal 10'!
+  ```
+  У викладача у вимогах та конвенціях вимагається мітка вузла (node label), наприклад `Number 10` чи `Int 10` (або `Literal 10`).
+
+---
+
+#### 3. Тести (Test cases):
+* Додати тести, де `if_stmt` іде одразу після іншої інструкції (без крапки з комою), наприклад:
+  ```sigmalang
+  yap npc x 👈🏻 10
+  is_this_real x 🤝 10 {
+      exit 1
+  }
+  ```
+  що підтвердить відсутність багу.
+
+---
+
+### План дій для виправлення:
+
+1. **Ієрархія класів AST**:
+   - Створити базові класи `StmtNode(ASTNode)` та `ExprNode(ASTNode)`.
+   - Успадкувати всі стейтменти від `StmtNode`, а всі вирази від `ExprNode`.
+   - Для числових літералів у `dump()` виводити мітку вузла, наприклад: `Number {self.value}` (або `Int {self.value}`, треба також оновити `.ast` файли тестів).
+
+2. **Граматика та неоднозначність Postfix if**:
+   - Щоб EBNF не дозволяв постфікс після блоку `if` і не було граматичної амбігуіті між постфіксним та блоковим `is_this_real`:
+     - Розділити `simple_stmt` і `if_stmt`:
+       ```ebnf
+       statement    ::= ( simple_stmt [ postfix_if ] | if_stmt ) [ ";" ] ;
+       simple_stmt  ::= decl | assign | exit_stmt ;
+       ```
+     - Для постфіксного модифікатора: або використати окреме brainrot-слово, наприклад `fr` / `ong` / `real` (e.g. `score 👈🏻 score + 5 fr hot`), **або** якщо залишати `is_this_real`, то в парсері робити lookahead: якщо після `expr` іде `{`, це початок блоку `is_this_real ... {`, а НЕ постфікс до попереднього стейтмента.
+     - Проте варіант з окремим ключовим словом (наприклад `fr` або `lowkey` або `real`) повністю прибирає будь-яку амбігуіті на рівні EBNF, як зауважив викладач! Або ж чітко розв'язати це в EBNF та парсері.
+
+3. **Баг із переходом між оголошенням та блоком `is_this_real` без `;`**:
+   - Виправити жадібне споживання `is_this_real`, щоб звичайний блок не ламався без `;`.
+
+4. **Оновлення тестових файлів**:
+   - Оновити згенеровані `.ast` файли для нових міток `Number`.
+   - Додати новий тест з послідовним `decl` + `is_this_real { ... }` без `;`.
+
+5. **Оновлення README та EBNF**.
+
+Як краще зробити з постфіксним if: замінити ключове слово постфіксу на щось на кшталт `fr` (for real) / `real` / `lowkey`, щоб усунути амбігуіті в EBNF на 100%, чи зберегти `is_this_real` і вирішити це через lookahead? Який варіант тобі ближчий?
+
+---
+
+User:
+так, давай замінимо ключове слово для постфіксного іф. ну і інші проблеми також виправити варто
+
+Model:
+Всі зауваження з фідбеку виправлено:
+
+---
+
+### Деталі внесених змін:
+
+1. **Language Design & Граматична неоднозначність (EBNF & Парсер)**:
+   - Для постфіксного модифікатора введено окреме тематичне ключове слово **`fr`** (*for real*):
+     ```sigmalang
+     score 👈🏻 score + 5 fr hot
+     exit score fr score 🤝 15
+     ```
+   - В [`grammar.ebnf`](file:///home/ubuntu/cs400/sigmalang-source/grammar.ebnf) чітко розмежовано `simple_stmt` та `if_stmt`:
+     ```ebnf
+     statement    ::= ( simple_stmt [ "fr" expr ] | if_stmt ) [ ";" ] ;
+     simple_stmt  ::= decl | assign | exit_stmt ;
+     ```
+     Це **повністю усуває неоднозначність** між постфіксом та початком блоку `is_this_real ... { }`, а також гарантує, що `if_stmt` не може мати постфікс.
+
+2. **Баг з переходом між оголошенням та блоком `is_this_real` без `;`**:
+   - Оскільки постфіксний модифікатор тепер позначається токеном `fr`, парсер більше не споживає `is_this_real` як постфікс до попереднього рядка. Звичайний код виду:
+     ```sigmalang
+     yap npc x 👈🏻 10
+     is_this_real x 🤝 10 {
+         exit 1
+     }
+     ```
+     тепер парситься бездоганно без крапки з комою.
+
+3. **Ієрархія класів AST (Node hierarchy)**:
+   - Введено базові класи [`StmtNode(ASTNode)`](file:///home/ubuntu/cs400/sigmalang-source/src/parser.py#L24) та [`ExprNode(ASTNode)`](file:///home/ubuntu/cs400/sigmalang-source/src/parser.py#L28).
+   - Всі стейтменти (`DeclNode`, `AssignNode`, `IfStmtNode`, `ExitStmtNode`) тепер успадковуються від `StmtNode`.
+   - Всі вирази (`BinOpNode`, `LiteralNode`, `VarNode`) успадковуються від `ExprNode`.
+
+4. **Мітка числових літералів у дампах AST (Node label)**:
+   - У `LiteralNode.dump()` числові значення тепер виводяться з міткою: `Number {self.value}` (замість просто числа).
+   - Оновлено всі `.ast` файли тестів під новий формат дампа.
+
+5. **Тести**:
+   - Додано новий тест [`tests/ok/if_after_statement.src`](file:///home/ubuntu/cs400/sigmalang-source/tests/ok/if_after_statement.src), що перевіряє послідовність оголошення та блоку `if` без роздільника `;`.
+   - Оновлено тести постфіксного `fr` (`postfix_if.src` та `postfix_if_no_cond.src`).
+   - Усі **37 тестів** (20 ok, 17 err) проходять успішно (`Passed: 37 | Failed: 0`).
+
+6. **VS Code розширення та README**:
+   - Додано `fr` до підсвічування синтаксису у [`sigmalang.tmLanguage.json`](file:///home/ubuntu/cs400/sigmalang-source/vscode-sigmalang-support/syntaxes/sigmalang.tmLanguage.json) та перепаковано `.vsix`.
+   - Оновлено документацію в [`README.md`](file:///home/ubuntu/cs400/sigmalang-source/README.md).
+   - Оновлено та засинхронізовано `ai_usage.txt`.
+
+---
+
+Всі зміни підготовлені в робочому дереві. Закомітити їх (наприклад, з повідомленням `fix: resolve grammar ambiguity, AST hierarchy and number node label`)?
+
+---

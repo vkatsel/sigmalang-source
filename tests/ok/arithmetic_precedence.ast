@@ -2,10 +2,10 @@ Program
   Decl val npc canon
     BinOp -
       BinOp +
-        2
+        Number 2
         BinOp *
-          3
-          4
+          Number 3
+          Number 4
       BinOp *
-        5
-        2
+        Number 5
+        Number 2

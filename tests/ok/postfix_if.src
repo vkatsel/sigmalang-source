@@ -1,4 +1,4 @@
-# Test postfix is_this_real modifier
+# Test postfix fr modifier
 yap npc score 👈🏻 10
-score 👈🏻 score + 5 is_this_real hot
-exit score is_this_real score 🤝 15
+score 👈🏻 score + 5 fr hot
+exit score fr score 🤝 15

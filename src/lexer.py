@@ -23,6 +23,7 @@ class TokenKind(enum.StrEnum):
     IS_THIS_REAL = "is_this_real"
     NAH = "nah"
     EXIT = "exit"
+    FR = "fr"
 
     # Boolean Literals
     HOT = "hot"
@@ -60,6 +61,7 @@ KEYWORDS: dict[str, TokenKind] = {
     "is_this_real": TokenKind.IS_THIS_REAL,
     "nah": TokenKind.NAH,
     "exit": TokenKind.EXIT,
+    "fr": TokenKind.FR,
     "hot": TokenKind.HOT,
     "cringe": TokenKind.CRINGE,
 }

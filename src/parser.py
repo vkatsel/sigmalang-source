@@ -21,12 +21,19 @@ class ASTNode:
     def dump(self, indent: int = 0) -> str:
         raise NotImplementedError
 
-type StatementNode = DeclNode | AssignNode | IfStmtNode | ExitStmtNode
-type ExprNode = BinOpNode | LiteralNode | VarNode
+@dataclass(slots=True)
+class StmtNode(ASTNode):
+    pass
+
+@dataclass(slots=True)
+class ExprNode(ASTNode):
+    pass
+
+type StatementNode = StmtNode
 
 @dataclass(slots=True)
 class ProgramNode(ASTNode):
-    statements: list[StatementNode]
+    statements: list[StmtNode]
 
     def dump(self, indent: int = 0) -> str:
         sp = " " * indent
@@ -36,7 +43,7 @@ class ProgramNode(ASTNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
-class DeclNode(ASTNode):
+class DeclNode(StmtNode):
     kind: str
     type_name: str
     name: str
@@ -49,7 +56,7 @@ class DeclNode(ASTNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
-class AssignNode(ASTNode):
+class AssignNode(StmtNode):
     name: str
     op: str
     expr: ExprNode
@@ -61,10 +68,10 @@ class AssignNode(ASTNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
-class IfStmtNode(ASTNode):
+class IfStmtNode(StmtNode):
     cond: ExprNode
-    then_body: list[StatementNode]
-    else_body: list[StatementNode] | None
+    then_body: list[StmtNode]
+    else_body: list[StmtNode] | None
 
     def dump(self, indent: int = 0) -> str:
         sp = " " * indent
@@ -81,7 +88,7 @@ class IfStmtNode(ASTNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
-class ExitStmtNode(ASTNode):
+class ExitStmtNode(StmtNode):
     expr: ExprNode
 
     def dump(self, indent: int = 0) -> str:
@@ -91,7 +98,7 @@ class ExitStmtNode(ASTNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
-class BinOpNode(ASTNode):
+class BinOpNode(ExprNode):
     op: str
     left: ExprNode
     right: ExprNode
@@ -104,7 +111,7 @@ class BinOpNode(ASTNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
-class LiteralNode(ASTNode):
+class LiteralNode(ExprNode):
     value: int | bool
     type_name: str
 
@@ -113,10 +120,10 @@ class LiteralNode(ASTNode):
         if isinstance(self.value, bool):
             val_str = "hot" if self.value else "cringe"
             return f"{sp}Bool {val_str}"
-        return f"{sp}{self.value}"
+        return f"{sp}Number {self.value}"
 
 @dataclass(slots=True)
-class VarNode(ASTNode):
+class VarNode(ExprNode):
     name: str
 
     def dump(self, indent: int = 0) -> str:
@@ -174,12 +181,12 @@ class Parser:
             case _:
                 raise ParserError(tok.line, tok.col, f"unexpected token '{tok.text or tok.kind}' at start of statement")
 
-        if self._peek().kind == TokenKind.IS_THIS_REAL:
-            if_tok = self._eat(TokenKind.IS_THIS_REAL)
+        if self._peek().kind == TokenKind.FR:
+            fr_tok = self._eat(TokenKind.FR)
             cond = self.parse_expr()
             stmt = IfStmtNode(
-                line=if_tok.line,
-                col=if_tok.col,
+                line=fr_tok.line,
+                col=fr_tok.col,
                 cond=cond,
                 then_body=[stmt],
                 else_body=None,

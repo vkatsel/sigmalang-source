@@ -1,5 +1,5 @@
 Program
   Decl total sigma yap
-    50
+    Number 50
   Assign total
-    100
+    Number 100

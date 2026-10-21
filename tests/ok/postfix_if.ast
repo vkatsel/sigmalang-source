@@ -1,6 +1,6 @@
 Program
   Decl score npc yap
-    10
+    Number 10
   If
     Condition
       Bool hot
@@ -8,12 +8,12 @@ Program
       Assign score
         BinOp +
           Var score
-          5
+          Number 5
   If
     Condition
       BinOp 🤝
         Var score
-        15
+        Number 15
     Then
       Exit
         Var score

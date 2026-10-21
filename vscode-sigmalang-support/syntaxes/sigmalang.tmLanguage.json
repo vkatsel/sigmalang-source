@@ -38,7 +38,7 @@
       "patterns": [
         {
           "name": "keyword.control.sigmalang",
-          "match": "\\b(is_this_real|nah|exit)\\b"
+          "match": "\\b(is_this_real|nah|exit|fr)\\b"
         },
         {
           "name": "storage.modifier.sigmalang",

@@ -4,6 +4,6 @@ Program
       Bool hot
     Then
       Decl x npc yap
-        1
+        Number 1
       Assign x
-        2
+        Number 2

@@ -6,11 +6,11 @@ Program
       If
         Condition
           BinOp 💔
-            5
-            10
+            Number 5
+            Number 10
         Then
           Decl status npc yap
-            1
+            Number 1
     Else
       Exit
         Bool cringe
