@@ -8,5 +8,5 @@ squad Point {
     }
 }
 
-yap Point p 👈🏻 { read(), read() }
+yap Point p 👈🏻 { absorb(), absorb() }
 exit p.d2()

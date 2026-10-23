@@ -7,6 +7,6 @@ lore is_positive(npc v) -> take {
 }
 
 yap npc val 👈🏻 7
-print("positive confirmed") fr is_positive(val)
-print("should not print") fr (val == 0)
+spit_fax("positive confirmed") fr is_positive(val)
+spit_fax("should not print") fr (val == 0)
 exit val

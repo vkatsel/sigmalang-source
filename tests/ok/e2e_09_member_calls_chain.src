@@ -16,6 +16,6 @@ squad Box {
 
 yap Box b 👈🏻 { { 1, 2 }, 50 }
 canon npc s 👈🏻 b.origin.shift(4, 8)
-print(s)
-print(b)
+spit_fax(s)
+spit_fax(b)
 exit 0

@@ -12,6 +12,6 @@ squad Counter {
 }
 
 yap Counter c 👈🏻 { 10 }
-print(c.step())
-print(c)
+spit_fax(c.step())
+spit_fax(c)
 exit 0

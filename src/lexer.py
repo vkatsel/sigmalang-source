@@ -26,8 +26,8 @@ class TokenKind(enum.StrEnum):
     FR = "fr"
     SQUAD = "squad"
     LORE = "lore"
-    READ = "read"
-    PRINT = "print"
+    READ = "absorb"
+    PRINT = "spit_fax"
 
     # Boolean Literals
     HOT = "hot"
@@ -72,8 +72,8 @@ KEYWORDS: dict[str, TokenKind] = {
     "fr": TokenKind.FR,
     "squad": TokenKind.SQUAD,
     "lore": TokenKind.LORE,
-    "read": TokenKind.READ,
-    "print": TokenKind.PRINT,
+    "absorb": TokenKind.READ,
+    "spit_fax": TokenKind.PRINT,
     "hot": TokenKind.HOT,
     "cringe": TokenKind.CRINGE,
 }

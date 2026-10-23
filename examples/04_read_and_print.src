@@ -8,9 +8,9 @@ squad Point {
     }
 }
 
-canon Point p 👈🏻 { read(), read() }
-print("Point read from input:")
-print(p)
-print(p.d2())
-print(hot)
+canon Point p 👈🏻 { absorb(), absorb() }
+spit_fax("Point read from input:")
+spit_fax(p)
+spit_fax(p.d2())
+spit_fax(hot)
 exit 0

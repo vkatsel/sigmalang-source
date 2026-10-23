@@ -7,5 +7,5 @@ lore fact(npc n) -> npc {
 }
 
 canon npc res 👈🏻 fact(5)
-print(res)
+spit_fax(res)
 exit res

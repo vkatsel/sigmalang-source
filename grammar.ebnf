@@ -29,7 +29,7 @@ bool_type     ::= "take" ;
 assign        ::= ident { "." ident } ( ":=" | "👈🏻" ) expr ;
 
 (* Built-in I/O statements *)
-print_stmt    ::= "print" "(" ( expr | string_lit ) ")" ;
+print_stmt    ::= "spit_fax" "(" ( expr | string_lit ) ")" ;
 
 (* If-Else block: requires at least one statement in each block *)
 if_stmt       ::= "is_this_real" expr "{" statement { statement } "}" [ "nah" "{" statement { statement } "}" ] ;
@@ -48,7 +48,7 @@ mul_op        ::= "*" ;
 
 factor        ::= number
                 | bool_lit
-                | "read" "(" ")"
+                | "absorb" "(" ")"
                 | "(" expr ")"
                 | ( ident [ "(" [ expr { "," expr } ] ")" ] ) { "." ident [ "(" [ expr { "," expr } ] ")" ] } ;
 

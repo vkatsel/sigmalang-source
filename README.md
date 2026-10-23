@@ -134,22 +134,22 @@ canon npc moved_x 👈🏻 moving_pt.shift(5)
 
 ---
 
-### 1.7 Built-in Input and Output (`read` and `print`)
+### 1.7 Built-in Input and Output (`absorb` and `spit_fax`)
 
-- **Rule (`read` Built-in Expression)**: `read()` is a built-in expression that takes zero arguments, reads one signed 32-bit integer from standard input (`stdin`), and evaluates to a value of type `npc` (`i32`).
-- **Rule (`print` Built-in Statement, Object Formatting & Newline Placement)**: `print(...)` is a statement (not an expression; it produces no value) that accepts a single argument of type `npc`, `sigma`, `take`, a string literal `"..."`, or a `squad` object. **`print` always outputs a single newline character (`\n`) at the very end of the printed item**:
+- **Rule (`absorb` Built-in Expression)**: `absorb()` is a built-in expression that takes zero arguments, reads one signed 32-bit integer from standard input (`stdin`), and evaluates to a value of type `npc` (`i32`).
+- **Rule (`spit_fax` Built-in Statement, Object Formatting & Newline Placement)**: `spit_fax(...)` is a statement (not an expression; it produces no value) that accepts a single argument of type `npc`, `sigma`, `take`, a string literal `"..."`, or a `squad` object. **`spit_fax` always outputs a single newline character (`\n`) at the very end of the printed item**:
   - `npc` (`i32`) is printed as a signed decimal integer (`%d\n`).
   - `sigma` (`i64`) is printed as a signed 64-bit decimal integer (`%lld\n`).
   - `take` (`bool`) is printed as the word `true` (when `hot`) or `false` (when `cringe`), followed by `\n`.
-  - A string literal `"text"` (allowed only as the argument of `print`) prints its characters followed by `\n`.
+  - A string literal `"text"` (allowed only as the argument of `spit_fax`) prints its characters followed by `\n`.
   - A `squad` object is printed as its type name and fields in declaration order in the format `SquadName{field1: val1, field2: val2}` (recursively formatting nested structures and booleans as `true`/`false` without intermediate newlines), followed by a single trailing `\n`.
 
 ```sigmalang
-yap Point p 👈🏻 { read(), read() }
-print("Point read from input:")
-print(p)
-print(p.d2())
-print(hot)
+yap Point p 👈🏻 { absorb(), absorb() }
+spit_fax("Point read from input:")
+spit_fax(p)
+spit_fax(p.d2())
+spit_fax(hot)
 ```
 For input `3 4`, the program above prints:
 ```text

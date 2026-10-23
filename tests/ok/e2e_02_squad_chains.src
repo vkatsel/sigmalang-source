@@ -10,6 +10,6 @@ squad Circle {
 
 yap Circle c 👈🏻 { { 3, 4 }, 10 }
 c.center.x 👈🏻 c.center.x + 7
-print(c.center.x)
-print(c)
+spit_fax(c.center.x)
+spit_fax(c)
 exit 0

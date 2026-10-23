@@ -12,6 +12,6 @@ squad Counter {
 }
 
 yap Counter c 👈🏻 { 5 }
-print(c.bump(3))
-print(global_counter)
+spit_fax(c.bump(3))
+spit_fax(global_counter)
 exit 0

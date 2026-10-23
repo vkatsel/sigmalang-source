@@ -12,5 +12,5 @@ lore double_val(npc v) -> npc {
 }
 
 canon npc ans 👈🏻 compute(5)
-print(ans)
+spit_fax(ans)
 exit 0
