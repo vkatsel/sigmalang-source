@@ -1,41 +1,62 @@
-(* Grammar for sigmaLang - Project Stage 1 *)
+(* Grammar for sigmaLang - Project Stage 2 *)
 (* Languages and Compilers Design *)
 (* Comments start with '#' and extend to the end of the line *)
 
-program      ::= { statement } ;
+program       ::= { squad_def | lore_def | statement } ;
 
-statement    ::= ( simple_stmt [ "fr" expr ] | if_stmt ) [ ";" ] ;
-simple_stmt  ::= decl | assign | exit_stmt ;
+(* Structures (squad): named type with typed fields followed by optional member functions *)
+squad_def     ::= "squad" ident "{" var_kind type ident [ ";" ] { var_kind type ident [ ";" ] } { lore_def } "}" ;
 
-(* Declarations: constants (canon), mutable variables (yap), immutable variables (canonmaxing) *)
-decl         ::= var_kind type ident (":=" | "👈🏻") expr ;
-var_kind     ::= "canon" | "yap" | "canonmaxing" ;
+(* Functions and Member Functions (lore): typed parameters and result type *)
+lore_def      ::= "lore" ident "(" [ type ident { "," type ident } ] ")" "->" type "{" statement { statement } "}" ;
 
-type         ::= i32_type | i64_type | bool_type ;
-i32_type     ::= "npc" ;
-i64_type     ::= "sigma" ;
-bool_type    ::= "take" ;
+(* Statements *)
+statement     ::= ( simple_stmt [ "fr" expr ] | if_stmt ) [ ";" ] ;
+simple_stmt   ::= decl | assign | print_stmt | exit_stmt ;
 
-(* Assignment: only allowed for mutable (yap) variables *)
-assign       ::= ident ( ":=" | "👈🏻" ) expr ;
+(* Declarations & Initialisation *)
+decl          ::= var_kind type ident ( ":=" | "👈🏻" ) ( expr | squad_init ) ;
+var_kind      ::= "canon" | "yap" | "canonmaxing" ;
+squad_init    ::= "{" ( expr | squad_init ) { "," ( expr | squad_init ) } "}" ;
+
+(* Types: primitive integer and boolean types, or a user-defined structure type *)
+type          ::= i32_type | i64_type | bool_type | ident ;
+i32_type      ::= "npc" ;
+i64_type      ::= "sigma" ;
+bool_type     ::= "take" ;
+
+(* Assignment: to a mutable variable or a mutable field chain *)
+assign        ::= ident { "." ident } ( ":=" | "👈🏻" ) expr ;
+
+(* Built-in I/O statements *)
+print_stmt    ::= "print" "(" ( expr | string_lit ) ")" ;
 
 (* If-Else block: requires at least one statement in each block *)
-if_stmt      ::= "is_this_real" expr "{" statement { statement } "}" [ "nah" "{" statement { statement } "}" ] ;
+if_stmt       ::= "is_this_real" expr "{" statement { statement } "}" [ "nah" "{" statement { statement } "}" ] ;
 
-exit_stmt    ::= "exit" factor ;
+exit_stmt     ::= "exit" factor ;
 
 (* Expressions *)
-expr         ::= arith [ comp_op arith ] ;
-comp_op      ::= "==" | "!=" | "🤝" | "💔" ;
+expr          ::= arith [ comp_op arith ] ;
+comp_op       ::= "==" | "!=" | "🤝" | "💔" ;
 
-arith        ::= term { add_op term } ;
-add_op       ::= "+" | "-" ;
+arith         ::= term { add_op term } ;
+add_op        ::= "+" | "-" ;
 
-term         ::= factor { mul_op factor } ;
-mul_op       ::= "*" ;
+term          ::= factor { mul_op factor } ;
+mul_op        ::= "*" ;
 
-factor       ::= number | bool_lit | ident | "(" expr ")" ;
-bool_lit     ::= "hot" | "cringe" ;
+factor        ::= number
+                | bool_lit
+                | "read" "(" ")"
+                | "(" expr ")"
+                | ( ident [ "(" [ expr { "," expr } ] ")" ] ) { "." ident [ "(" [ expr { "," expr } ] ")" ] } ;
 
-number       ::= digit { digit } ;
-ident        ::= letter { letter | digit | "_" } ;
+(* Lexical Rules *)
+bool_lit      ::= "hot" | "cringe" ;
+string_lit    ::= '"' { string_char } '"' ;
+string_char   ::= (* any printable character except '"' and newline *) ;
+number        ::= digit { digit } ;
+ident         ::= ( letter | "_" ) { letter | digit | "_" } ;
+digit         ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+letter        ::= "a" .. "z" | "A" .. "Z" ;
