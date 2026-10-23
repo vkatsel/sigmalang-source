@@ -1,0 +1,1 @@
+compilation error: line 1:1: function 'no_exit' must leave with a value using 'exit'

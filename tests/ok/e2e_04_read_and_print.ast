@@ -1,0 +1,30 @@
+Program
+  Squad Point
+    Field x npc canon
+    Field y npc canon
+    MemberLore d2() -> npc
+      Decl r npc canon
+        BinOp +
+          BinOp *
+            Var x
+            Var x
+          BinOp *
+            Var y
+            Var y
+      Exit
+        Var r
+  Decl p Point canon
+    SquadInit
+      Read
+      Read
+  Print
+    String "Point read from input:"
+  Print
+    Var p
+  Print
+    MemberCall d2
+      Var p
+  Print
+    Bool hot
+  Exit
+    Number 0

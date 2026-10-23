@@ -1,0 +1,17 @@
+squad Counter {
+    yap npc val
+
+    lore step() -> npc {
+        exit add_delta(5)
+    }
+
+    lore add_delta(npc d) -> npc {
+        val 👈🏻 val + d
+        exit val
+    }
+}
+
+yap Counter c 👈🏻 { 10 }
+spit_fax(c.step())
+spit_fax(c)
+exit 0

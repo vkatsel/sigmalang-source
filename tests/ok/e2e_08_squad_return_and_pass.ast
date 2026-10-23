@@ -1,0 +1,36 @@
+Program
+  Squad Point
+    Field x npc yap
+    Field y npc yap
+  Lore add_points(Point a, Point b) -> Point
+    Decl sum Point canon
+      SquadInit
+        BinOp +
+          FieldAccess x
+            Var a
+          FieldAccess x
+            Var b
+        BinOp +
+          FieldAccess y
+            Var a
+          FieldAccess y
+            Var b
+    Exit
+      Var sum
+  Decl p1 Point canon
+    SquadInit
+      Number 10
+      Number 20
+  Decl p2 Point canon
+    SquadInit
+      Number 5
+      Number 15
+  Decl p3 Point canon
+    Call add_points
+      Var p1
+      Var p2
+  Print
+    Var p3
+  Exit
+    FieldAccess x
+      Var p3

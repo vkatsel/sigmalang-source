@@ -1,0 +1,12 @@
+squad Point {
+    yap npc x
+    yap npc y
+
+    lore d2() -> npc {
+        canon npc r 👈🏻 x * x + y * y
+        exit r
+    }
+}
+
+yap Point p 👈🏻 { absorb(), absorb() }
+exit p.d2()

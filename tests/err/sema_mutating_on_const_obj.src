@@ -1,0 +1,11 @@
+squad Point {
+    yap npc x
+    yap npc y
+
+    lore shift(npc dx) -> npc {
+        x 👈🏻 x + dx
+        exit x
+    }
+}
+canon Point p 👈🏻 { 3, 4 }
+canon npc r 👈🏻 p.shift(1)

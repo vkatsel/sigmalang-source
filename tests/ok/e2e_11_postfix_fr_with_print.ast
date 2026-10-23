@@ -1,0 +1,32 @@
+Program
+  Lore is_positive(npc v) -> take
+    If
+      Condition
+        BinOp ==
+          Var v
+          Number 0
+      Then
+        Exit
+          Bool cringe
+      Else
+        Exit
+          Bool hot
+  Decl val npc yap
+    Number 7
+  If
+    Condition
+      Call is_positive
+        Var val
+    Then
+      Print
+        String "positive confirmed"
+  If
+    Condition
+      BinOp ==
+        Var val
+        Number 0
+    Then
+      Print
+        String "should not print"
+  Exit
+    Var val

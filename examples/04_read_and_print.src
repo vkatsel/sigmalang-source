@@ -1,0 +1,16 @@
+squad Point {
+    canon npc x
+    canon npc y
+
+    lore d2() -> npc {
+        canon npc r 👈🏻 x * x + y * y
+        exit r
+    }
+}
+
+canon Point p 👈🏻 { absorb(), absorb() }
+spit_fax("Point read from input:")
+spit_fax(p)
+spit_fax(p.d2())
+spit_fax(hot)
+exit 0
