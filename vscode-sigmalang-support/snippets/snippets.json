@@ -35,6 +35,40 @@
     ],
     "description": "Declare an immutable variable"
   },
+  "Lore Function Definition": {
+    "prefix": ["lore", "fn", "func"],
+    "body": [
+      "lore ${1:name}(${2:npc a}) -> ${3|npc,sigma,take|} {",
+      "\t$0",
+      "\texit ${4:0}",
+      "}"
+    ],
+    "description": "Define a lore function or member function"
+  },
+  "Squad Structure Definition": {
+    "prefix": ["squad", "struct"],
+    "body": [
+      "squad ${1:Name} {",
+      "\tyap ${2|npc,sigma,take|} ${3:field}",
+      "\t$0",
+      "}"
+    ],
+    "description": "Define a squad structure with fields and optional member functions"
+  },
+  "Spit Fax (Print) Statement": {
+    "prefix": ["spit_fax", "print"],
+    "body": [
+      "spit_fax(${1:value})"
+    ],
+    "description": "Print a value or string literal with trailing newline"
+  },
+  "Absorb (Read) Expression": {
+    "prefix": ["absorb", "read"],
+    "body": [
+      "absorb()"
+    ],
+    "description": "Read a 32-bit integer (npc) from standard input"
+  },
   "If Statement": {
     "prefix": ["if", "is_this_real"],
     "body": [
@@ -58,8 +92,8 @@
   "Exit Statement": {
     "prefix": ["exit"],
     "body": [
-      "exit ${1:cringe}"
+      "exit ${1:0}"
     ],
-    "description": "Exit statement"
+    "description": "Exit function or program with a value"
   }
 }

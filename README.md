@@ -182,39 +182,43 @@ source ~/lcd/bin/activate
 # 1. Generate LLVM IR module to output.ll
 python3 compiler.py examples/simple_example.txt output.ll
 
-# 2. Link with clang and execute
-clang -x ir output.ll -o program -Wno-override-module
-./program
+# 2. Run via lli or compile with clang
+lli output.ll
 ```
 
-Or in a single step via `./run.sh`:
+Or compile and run in a single step via `./run.sh` (automatically feeds `NAME.in` to `stdin` if present):
 ```bash
 ./run.sh examples/simple_example.txt
+./run.sh examples/04_read_and_print.src
 ```
 
 ### 3.2 Print the AST (`--ast`)
 ```bash
-python3 compiler.py --ast tests/ok/var_decl_canon.src
+python3 compiler.py --ast examples/simple_example.txt
+# or via run.sh:
+./run.sh --ast examples/simple_example.txt
 ```
 
 ### 3.3 Error Reporting
-On any lexical, syntax, or semantic error, the compiler prints a single diagnostic line to `stderr`, exits with a non-zero status code, and produces no `.ll` output file:
+On any lexical, syntax, or semantic error, the compiler prints a single diagnostic line to `stderr` with exact `line:col` coordinates, exits with a non-zero status code, and produces no `.ll` output file:
 ```text
-compilation error: line 1:16: integer literal overflow: '2147483648' exceeds 32-bit integer range for type 'npc'
+compilation error: line 11:16: cannot call mutating member function 'shift' on canon variable 'p'
 ```
 
 ---
 
 ## 4. Running the Test Suite
 
-Run all automated tests (AST tests, end-to-end LLVM IR execution tests with `.expected` and `.in`, and negative error tests with `.err`):
+Run all 61 automated tests (Stage 1 AST & error tests, Stage 2 end-to-end LLVM IR execution tests with `.expected` and `.in`, and Stage 2 negative semantic error tests with `.err`):
 ```bash
 ./run_tests.sh
 ```
 
 ---
 
-## 5. VS Code Extension
+## 5. VS Code Extension (Extra Feature)
 
-A companion Visual Studio Code extension providing syntax highlighting and emoji snippets for `sigmaLang` is located in [`./vscode-sigmalang-support`](./vscode-sigmalang-support):
-- Pre-packaged VSIX package: [`vscode-sigmalang-support/sigmalang-support-0.1.0.vsix`](./vscode-sigmalang-support/sigmalang-support-0.1.0.vsix).
+A companion Visual Studio Code extension providing syntax highlighting and code snippets for **Stage 1 & Stage 2** of `sigmaLang` is located in [`./vscode-sigmalang-support`](./vscode-sigmalang-support):
+- **Syntax Highlighting** ([`syntaxes/sigmalang.tmLanguage.json`](./vscode-sigmalang-support/syntaxes/sigmalang.tmLanguage.json)): highlights `squad` and `lore` declarations, built-in I/O (`absorb`, `spit_fax`), mutability modifiers (`canon`, `yap`, `canonmaxing`), control flow (`is_this_real`, `nah`, `fr`, `exit`), primitive and user-defined `squad` types, string literals (`"..."`), function calls, and emoji/arrow operators (`👈🏻`, `🤝`, `💔`, `->`).
+- **Code & Emoji Snippets** ([`snippets/snippets.json`](./vscode-sigmalang-support/snippets/snippets.json)): auto-completion templates for `lore` functions, `squad` structures, `spit_fax(...)`, `absorb()`, variable declarations, and emoji operators.
+- **Pre-packaged VSIX package**: [`vscode-sigmalang-support/sigmalang-support-0.1.0.vsix`](./vscode-sigmalang-support/sigmalang-support-0.1.0.vsix).

@@ -1310,3 +1310,52 @@ Model:
 Що робимо далі — оформлюємо фінальний `ai_usage_2.txt` (поєднуємо шаблон із `.agents/stage2-files/ai_usage_2_template.txt` та автолог) чи хочеш ще щось додати/перевірити?
 
 ---
+
+User:
+так, слухай. аі юзедж я вже закомітиві ще згадав шо в нас є прекрасний екстеншн який теж треба було би оновити + додатково звірити рідміі з тим що маємо фактично
+
+Model:
+Запустив перепакування `.vsix` та прогін тестів — чекаю на завершення команди.
+
+---
+
+User:
+а чому не підходить @[sigmalang-source/examples/simple_example.txt] от же він існує ж
+
+Model:
+Мій одрук у формулюванні — сам файл [simple_example.txt](file:///home/ubuntu/cs400/sigmalang-source/examples/simple_example.txt) дійсно існує! Причина, чому я його замінив у прикладі запуску в [README.md](file:///home/ubuntu/cs400/sigmalang-source/README.md#L180-L193), інша:
+
+Всередині [simple_example.txt](file:///home/ubuntu/cs400/sigmalang-source/examples/simple_example.txt#L1-L9) залишилися крапки з комою `;` в кінці рядків ще з ранньої чернетки Stage 1:
+```text
+yap sigma x := 5;
+yap sigma y := 10;
+
+is_this_real (x == y) {
+    exit hot;
+} 
+nah {
+    exit cringe;
+}
+```
+Через те, що в граматиці `sigmaLang` крапки з комою немає, якщо перевіряючий скопіює команду `./run.sh examples/simple_example.txt` із `README.md`, вона впаде з помилкою лексера:
+`compilation error: line 1:17: unexpected character ';'`
+
+Ми можемо зробити один із двох варіантів (або обидва):
+1. Прибрати `;` у [simple_example.txt](file:///home/ubuntu/cs400/sigmalang-source/examples/simple_example.txt), щоб він без проблем компілювався і запускався, та залишити його в [README.md](file:///home/ubuntu/cs400/sigmalang-source/README.md) поруч із новими прикладами `01..04.src`.
+2. Залишити в `README.md` тільки нові приклади `examples/03_member_lore_and_scoping.src` та `examples/04_read_and_print.src` (і все одно прибрати `;` з `simple_example.txt`, щоб у папці `examples/` не лежав невалідний файл).
+
+Як краще зробити?
+
+---
+
+User:
+давай приберемо крапки з комою і ернем його назад в рідмі,  simple is better then complex))
+
+Model:
+Готово! Прибрав крапки з комою в [examples/simple_example.txt](file:///home/ubuntu/cs400/sigmalang-source/examples/simple_example.txt) і повернув його в [README.md](file:///home/ubuntu/cs400/sigmalang-source/README.md#L180-L201).
+
+Перевірив обидві команди:
+- `./run.sh examples/simple_example.txt` -> `Program exit with result false`
+- `./run.sh --ast examples/simple_example.txt` -> коректно друкує AST.
+
+---
