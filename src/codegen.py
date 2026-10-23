@@ -385,6 +385,7 @@ class LLVMCodeGenerator:
 
             case ReadNode():
                 slot = self._entry_alloca(self.i32_type, name="read_slot")
+                self.builder.store(ir.Constant(self.i32_type, 0), slot)
                 fmt_ptr = self.builder.bitcast(self.fmt_d, self.i8p_type)
                 self.builder.call(self.scanf_fn, [fmt_ptr, slot])
                 return self.builder.load(slot, name="read_val")

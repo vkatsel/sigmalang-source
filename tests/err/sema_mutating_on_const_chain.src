@@ -1,0 +1,15 @@
+squad Point {
+    yap npc x
+    yap npc y
+
+    lore shift(npc dx) -> npc {
+        x 👈🏻 x + dx
+        exit x
+    }
+}
+squad Circle {
+    canon Point center
+    yap npc radius
+}
+yap Circle c 👈🏻 { { 3, 4 }, 10 }
+canon npc r 👈🏻 c.center.shift(1)

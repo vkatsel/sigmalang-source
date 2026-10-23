@@ -1,0 +1,15 @@
+squad Point {
+    yap npc x
+    yap npc y
+}
+
+lore add_points(Point a, Point b) -> Point {
+    canon Point sum 👈🏻 { a.x + b.x, a.y + b.y }
+    exit sum
+}
+
+canon Point p1 👈🏻 { 10, 20 }
+canon Point p2 👈🏻 { 5, 15 }
+canon Point p3 👈🏻 add_points(p1, p2)
+print(p3)
+exit p3.x

@@ -1,0 +1,4 @@
+lore add(npc a, npc b) -> npc {
+    exit (a + b)
+}
+canon npc x 👈🏻 add(1)

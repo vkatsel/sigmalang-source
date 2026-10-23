@@ -1,0 +1,11 @@
+lore fact(npc n) -> npc {
+    is_this_real (n 🤝 0) {
+        exit 1
+    } nah {
+        exit (n * fact(n - 1))
+    }
+}
+
+canon npc res 👈🏻 fact(5)
+print(res)
+exit res

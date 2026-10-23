@@ -1,0 +1,38 @@
+Program
+  Squad Point
+    Field x npc yap
+    Field y npc yap
+    MemberLore shift(npc dx, npc dy) -> npc
+      Assign x
+        BinOp +
+          Var x
+          Var dx
+      Assign y
+        BinOp +
+          Var y
+          Var dy
+      Exit
+        BinOp +
+          Var x
+          Var y
+  Squad Box
+    Field origin Point yap
+    Field size npc canon
+  Decl b Box yap
+    SquadInit
+      SquadInit
+        Number 1
+        Number 2
+      Number 50
+  Decl s npc canon
+    MemberCall shift
+      FieldAccess origin
+        Var b
+      Number 4
+      Number 8
+  Print
+    Var s
+  Print
+    Var b
+  Exit
+    Number 0

@@ -1,0 +1,8 @@
+lore scale_big(sigma base, sigma mult) -> sigma {
+    exit (base * mult + 42)
+}
+
+canon sigma big 👈🏻 5000000000
+canon sigma out 👈🏻 scale_big(big, 2)
+print(out)
+exit 0

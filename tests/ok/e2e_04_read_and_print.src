@@ -1,0 +1,16 @@
+squad Point {
+    canon npc x
+    canon npc y
+
+    lore d2() -> npc {
+        canon npc r 👈🏻 x * x + y * y
+        exit r
+    }
+}
+
+canon Point p 👈🏻 { read(), read() }
+print("Point read from input:")
+print(p)
+print(p.d2())
+print(hot)
+exit 0

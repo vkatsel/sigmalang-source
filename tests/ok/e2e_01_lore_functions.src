@@ -1,0 +1,16 @@
+lore add(npc a, npc b) -> npc {
+    canon npc res 👈🏻 a + b
+    exit res
+}
+
+lore compute(npc x) -> npc {
+    exit add(add(x, 1), double_val(x))
+}
+
+lore double_val(npc v) -> npc {
+    exit (v * 2)
+}
+
+canon npc ans 👈🏻 compute(5)
+print(ans)
+exit 0

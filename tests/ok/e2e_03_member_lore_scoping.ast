@@ -1,0 +1,50 @@
+Program
+  Decl x npc canon
+    Number 100
+  Squad Point
+    Field x npc yap
+    Field y npc yap
+    MemberLore d2() -> npc
+      Decl r npc canon
+        BinOp +
+          BinOp *
+            Var x
+            Var x
+          BinOp *
+            Var y
+            Var y
+      Exit
+        Var r
+    MemberLore shadow_demo(npc x) -> npc
+      Exit
+        Var x
+    MemberLore shift(npc dx) -> npc
+      Assign x
+        BinOp +
+          Var x
+          Var dx
+      Exit
+        Var x
+  Decl fixed_pt Point canon
+    SquadInit
+      Number 3
+      Number 4
+  Print
+    MemberCall d2
+      Var fixed_pt
+  Print
+    MemberCall shadow_demo
+      Var fixed_pt
+      Number 42
+  Decl moving_pt Point yap
+    SquadInit
+      Number 3
+      Number 4
+  Print
+    MemberCall shift
+      Var moving_pt
+      Number 5
+  Print
+    Var moving_pt
+  Exit
+    Number 0

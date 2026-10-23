@@ -1,0 +1,1 @@
+compilation error: line 2:10: function 'bad_ret' return type mismatch: expected 'npc', got 'take'

@@ -1,0 +1,17 @@
+yap npc global_counter 👈🏻 10
+canon npc x 👈🏻 999
+
+squad Counter {
+    yap npc x
+
+    lore bump(npc step) -> npc {
+        global_counter 👈🏻 global_counter + step
+        x 👈🏻 x + global_counter
+        exit x
+    }
+}
+
+yap Counter c 👈🏻 { 5 }
+print(c.bump(3))
+print(global_counter)
+exit 0

@@ -1,0 +1,29 @@
+canon npc x 👈🏻 100
+
+squad Point {
+    yap npc x
+    yap npc y
+
+    lore d2() -> npc {
+        canon npc r 👈🏻 x * x + y * y
+        exit r
+    }
+
+    lore shadow_demo(npc x) -> npc {
+        exit x
+    }
+
+    lore shift(npc dx) -> npc {
+        x 👈🏻 x + dx
+        exit x
+    }
+}
+
+canon Point fixed_pt 👈🏻 { 3, 4 }
+print(fixed_pt.d2())
+print(fixed_pt.shadow_demo(42))
+
+yap Point moving_pt 👈🏻 { 3, 4 }
+print(moving_pt.shift(5))
+print(moving_pt)
+exit 0

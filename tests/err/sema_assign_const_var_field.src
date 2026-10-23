@@ -1,0 +1,6 @@
+squad Point {
+    yap npc x
+    yap npc y
+}
+canon Point p 👈🏻 { 1, 2 }
+p.x 👈🏻 10

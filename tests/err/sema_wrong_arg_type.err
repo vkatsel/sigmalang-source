@@ -1,0 +1,1 @@
+compilation error: line 4:23: argument type mismatch for function 'add': expected 'npc', got 'take'

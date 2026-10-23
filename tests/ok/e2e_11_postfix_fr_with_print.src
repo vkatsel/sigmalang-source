@@ -1,0 +1,12 @@
+lore is_positive(npc v) -> take {
+    is_this_real (v == 0) {
+        exit cringe
+    } nah {
+        exit hot
+    }
+}
+
+yap npc val 👈🏻 7
+print("positive confirmed") fr is_positive(val)
+print("should not print") fr (val == 0)
+exit val
