@@ -1,0 +1,16 @@
+Program
+  Lore living_func(npc x) -> npc
+    Exit
+      BinOp +
+        Var x
+        Number 1
+  Decl r1 npc yap
+    Call living_func
+      Number 5
+  Decl r2 npc yap
+    Call living_func
+      Number 10
+  Print
+    BinOp +
+      Var r1
+      Var r2

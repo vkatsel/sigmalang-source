@@ -27,6 +27,7 @@ class VarInfo:
     line: int
     col: int
     is_global: bool = False
+    decl: DeclNode | None = None
 
 
 @dataclass(slots=True)
@@ -65,6 +66,9 @@ class SquadInfo:
 
 class SemanticAnalyzer:
     def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
         self.squads: dict[str, SquadInfo] = {}
         self.functions: dict[str, LoreInfo] = {}
         self.global_scope: dict[str, VarInfo] = {}
@@ -76,6 +80,7 @@ class SemanticAnalyzer:
         self.call_origins: dict[int, tuple[str, str | None]] = {}
         self.deferred_mutability_checks: list[tuple[str, str, int, int, str]] = []
         self.loop_depth = 0
+        self.decl_bindings: dict[int, DeclNode] = {}
 
     def set_type(self, node: ExprNode, type_name: str) -> str:
         self.expr_types[id(node)] = type_name
@@ -99,6 +104,7 @@ class SemanticAnalyzer:
         return None
 
     def analyze(self, prog: ProgramNode) -> None:
+        self.reset()
         for stmt in prog.statements:
             if isinstance(stmt, SquadDefNode):
                 self._collect_squad(stmt)
@@ -345,6 +351,7 @@ class SemanticAnalyzer:
             line=decl.line,
             col=decl.col,
             is_global=is_global_var,
+            decl=decl,
         )
         target_scope[decl.name] = var_info
         self.name_origins[id(decl)] = ("global" if is_global_var else "local", decl.type_name)
@@ -372,6 +379,8 @@ class SemanticAnalyzer:
 
         origin, root_info = resolved
         self.name_origins[id(assign)] = (origin, root_info.type_name)
+        if isinstance(root_info, VarInfo) and root_info.decl is not None:
+            self.decl_bindings[id(assign)] = root_info.decl
 
         if not assign.fields:
             if not root_info.mutable:
@@ -513,6 +522,8 @@ class SemanticAnalyzer:
                     raise SemanticError(expr.line, expr.col, f"undefined variable '{expr.name}'")
                 origin, info = resolved
                 self.name_origins[id(expr)] = (origin, info.type_name)
+                if isinstance(info, VarInfo) and info.decl is not None:
+                    self.decl_bindings[id(expr)] = info.decl
                 return self.set_type(expr, info.type_name)
 
             case ReadNode():

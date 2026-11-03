@@ -1,0 +1,5 @@
+Program
+  Decl keep_me npc yap
+    Number 55
+  Print
+    Var keep_me

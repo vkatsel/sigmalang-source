@@ -14,22 +14,32 @@ elif [ -d "$HOME/lcd/lib/python3.12/site-packages" ]; then
     export PYTHONPATH="$HOME/lcd/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
 fi
 
-if [ $# -eq 0 ]; then
-    echo "Usage: ./run.sh <source_file> [output.ll] [--ast]"
+OPT_FLAG=""
+ARGS=()
+for arg in "$@"; do
+    if [ "$arg" = "--optimize" ]; then
+        OPT_FLAG="--optimize"
+    else
+        ARGS+=("$arg")
+    fi
+done
+
+if [ ${#ARGS[@]} -eq 0 ]; then
+    echo "Usage: ./run.sh <source_file> [output.ll] [--ast] [--optimize]"
     exit 1
 fi
 
-if [ "$1" = "--ast" ]; then
-    exec "$PYTHON" "${REPO_DIR}/compiler.py" --ast "$2"
-elif [ "$2" = "--ast" ]; then
-    exec "$PYTHON" "${REPO_DIR}/compiler.py" --ast "$1"
+if [ "${ARGS[0]}" = "--ast" ]; then
+    exec "$PYTHON" "${REPO_DIR}/compiler.py" --ast "${ARGS[1]}" $OPT_FLAG
+elif [ "${ARGS[1]:-}" = "--ast" ]; then
+    exec "$PYTHON" "${REPO_DIR}/compiler.py" --ast "${ARGS[0]}" $OPT_FLAG
 fi
 
-INPUT="$1"
-OUTPUT="${2:-/tmp/sigmalang_out.ll}"
+INPUT="${ARGS[0]}"
+OUTPUT="${ARGS[1]:-/tmp/sigmalang_out.ll}"
 
 # Compile to LLVM IR
-"$PYTHON" "${REPO_DIR}/compiler.py" "$INPUT" "$OUTPUT"
+"$PYTHON" "${REPO_DIR}/compiler.py" "$INPUT" "$OUTPUT" $OPT_FLAG
 
 IN_FILE="${INPUT%.*}.in"
 INPUT_REDIR=""

@@ -1,0 +1,6 @@
+yap npc unused_dead := 100;
+yap npc used_val := 42;
+yap npc unused_assigned := 5;
+unused_assigned := 10;
+spit_fax(used_val);
+

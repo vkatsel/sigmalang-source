@@ -1,0 +1,15 @@
+lore helper_c(npc x) -> npc {
+    exit (x * 3);
+}
+
+lore helper_b(npc x) -> npc {
+    exit (helper_c(x) + 2);
+}
+
+lore helper_a(npc x) -> npc {
+    exit (helper_b(x) * 4);
+}
+
+yap npc keep_me := 55;
+spit_fax(keep_me);
+

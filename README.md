@@ -224,6 +224,66 @@ while.exit:
 
 ---
 
+### 1.9 The Optimizer (`--optimize`) [Stage 3 Task 2]
+
+The optimizer operates on the checked AST before LLVM IR generation whenever `--optimize` is provided anywhere on the command line:
+
+1. **Unused variables**: Declarations and assignments that are never read are iteratively removed until fixpoint. Scopes and shadowing are respected. Crucially, expressions calling functions or performing input (`absorb()`) are preserved for their side effects.
+2. **Unused functions**: Functions that are never called across the program are removed with their entire bodies to a fixpoint (removing one body may leave another function unused).
+3. **Inlining**: Functions called exactly once are replaced at their call site by their body:
+   - Parameters become local declarations initialized with the argument expressions.
+   - Names are alpha-renamed (e.g. `_inl_1_param`) to guarantee no name collisions with the caller's scope.
+   - The expression of the trailing `exit` statement stands in place of the call.
+   - The inlined function definition is subsequently removed as unused.
+   - **Inlining Shapes & Restrictions**: Recursive functions (direct or indirect cycle in the call graph) are **never** inlined. Functions with multiple exit points (e.g. exiting inside an `is_this_real` branch) are left alone; inlining only targets functions ending in a single terminal `exit`.
+
+#### LLVM IR Before & After Excerpt (Function Inlining)
+
+**Source:**
+```sigmalang
+lore double_val(npc x) -> npc {
+    exit (x * 2);
+}
+yap npc num := 21;
+yap npc result := double_val(num);
+spit_fax(result);
+```
+
+**Before `--optimize` (with function call):**
+```llvm
+define i32 @"_lore_double_val"(i32 %"x") {
+entry:
+  %"x_slot" = alloca i32
+  store i32 %"x", i32* %"x_slot"
+  %"x.1" = load i32, i32* %"x_slot"
+  %".4" = mul i32 %"x.1", 2
+  ret i32 %".4"
+}
+define i32 @"main"() {
+entry:
+  store i32 21, i32* @"_global_num"
+  %"num" = load i32, i32* @"_global_num"
+  %".3" = call i32 @"_lore_double_val"(i32 %"num")
+  store i32 %".3", i32* @"_global_result"
+  ...
+```
+
+**After `--optimize` (inlined & pruned):**
+```llvm
+define i32 @"main"() {
+entry:
+  store i32 21, i32* @"_global_num"
+  %"num" = load i32, i32* @"_global_num"
+  store i32 %"num", i32* @"_global__inl_1_x"
+  %"_inl_1_x" = load i32, i32* @"_global__inl_1_x"
+  %".4" = mul i32 %"_inl_1_x", 2
+  store i32 %".4", i32* @"_global_result"
+  ...
+```
+* Notice that `_lore_double_val` has been completely eliminated from the LLVM module, and the call site `%".3" = call i32 @"_lore_double_val"(...)` in `main` was replaced by the inlined parameter storage and direct arithmetic computation.
+
+---
+
 ## 2. Requirements & Setup
 
 ### Environment
@@ -242,8 +302,9 @@ source ~/lcd/bin/activate
 
 ### 3.1 Compile to LLVM IR and Run
 ```bash
-# 1. Generate LLVM IR module to output.ll
+# 1. Generate LLVM IR module to output.ll (unoptimized or optimized)
 python3 compiler.py examples/simple_example.txt output.ll
+python3 compiler.py examples/simple_example.txt output.ll --optimize
 
 # 2. Run via lli or compile with clang
 lli output.ll
@@ -252,14 +313,19 @@ lli output.ll
 Or compile and run in a single step via `./run.sh` (automatically feeds `NAME.in` to `stdin` if present):
 ```bash
 ./run.sh examples/simple_example.txt
+./run.sh examples/simple_example.txt --optimize
 ./run.sh examples/04_read_and_print.src
 ```
 
 ### 3.2 Print the AST (`--ast`)
 ```bash
+# Dump initial AST
 python3 compiler.py --ast examples/simple_example.txt
+
+# Dump optimized AST after running the optimizer
+python3 compiler.py --ast --optimize examples/simple_example.txt
 # or via run.sh:
-./run.sh --ast examples/simple_example.txt
+./run.sh --ast --optimize examples/simple_example.txt
 ```
 
 ### 3.3 Error Reporting
@@ -272,7 +338,7 @@ compilation error: line 11:16: cannot call mutating member function 'shift' on c
 
 ## 4. Running the Test Suite
 
-Run all 68 automated tests (Stage 1 AST & error tests, Stage 2 end-to-end LLVM IR execution tests with `.expected` and `.in`, Stage 2 negative semantic error tests with `.err`, and Stage 3 loop tests):
+Run all 74 automated tests (Stage 1 AST & error tests, Stage 2 end-to-end LLVM IR execution tests with `.expected` and `.in`, Stage 2 negative semantic error tests with `.err`, Stage 3 loop tests, and Stage 3 optimizer transformation tests with equivalence checks):
 ```bash
 ./run_tests.sh
 ```

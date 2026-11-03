@@ -95,6 +95,83 @@ if [ -d "${REPO_DIR}/tests/ok" ]; then
     done
 fi
 
+# Test Optimizer Transformations (tests/optimizer)
+if [ -d "${REPO_DIR}/tests/optimizer" ]; then
+    for src in "${REPO_DIR}/tests/optimizer"/*.src; do
+        [ -e "$src" ] || continue
+        TOTAL=$((TOTAL + 1))
+        test_name="$(basename "$src" .src)"
+        expected_ast="${REPO_DIR}/tests/optimizer/${test_name}.ast"
+        expected_out="${REPO_DIR}/tests/optimizer/${test_name}.expected"
+        input_file="${REPO_DIR}/tests/optimizer/${test_name}.in"
+
+        test_failed=0
+
+        if [ -f "$expected_ast" ]; then
+            actual_ast="$("$PYTHON" "${REPO_DIR}/compiler.py" --ast --optimize "$src" 2>&1)"
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] tests/optimizer/${test_name} (Optimized AST): exited with non-zero code ${exit_code}"
+                echo "$actual_ast"
+                test_failed=1
+            else
+                expected_ast_content="$(cat "$expected_ast")"
+                if [ "$actual_ast" != "$expected_ast_content" ]; then
+                    echo "❌ [FAIL] tests/optimizer/${test_name} (Optimized AST): mismatch"
+                    echo "--- Expected AST ---"
+                    echo "$expected_ast_content"
+                    echo "--- Actual AST ---"
+                    echo "$actual_ast"
+                    test_failed=1
+                fi
+            fi
+        fi
+
+        if [ $test_failed -eq 0 ] && [ -f "$expected_out" ]; then
+            # Run with --optimize
+            if [ -f "$input_file" ]; then
+                actual_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" --optimize < "$input_file" 2>&1)"
+            else
+                actual_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" --optimize 2>&1)"
+            fi
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] tests/optimizer/${test_name} (Run with --optimize): failed with code ${exit_code}"
+                echo "$actual_opt"
+                test_failed=1
+            else
+                expected_out_content="$(cat "$expected_out" | tr -d '\r')"
+                actual_opt_clean="$(echo "$actual_opt" | tr -d '\r')"
+                if [ "$actual_opt_clean" != "$expected_out_content" ]; then
+                    echo "❌ [FAIL] tests/optimizer/${test_name} (Run with --optimize): output mismatch"
+                    test_failed=1
+                fi
+            fi
+
+            # Run without --optimize (verify equivalence)
+            if [ $test_failed -eq 0 ]; then
+                if [ -f "$input_file" ]; then
+                    actual_no_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" < "$input_file" 2>&1)"
+                else
+                    actual_no_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" 2>&1)"
+                fi
+                actual_no_opt_clean="$(echo "$actual_no_opt" | tr -d '\r')"
+                if [ "$actual_no_opt_clean" != "$expected_out_content" ]; then
+                    echo "❌ [FAIL] tests/optimizer/${test_name} (Equivalence without --optimize): output mismatch"
+                    test_failed=1
+                fi
+            fi
+        fi
+
+        if [ $test_failed -eq 0 ]; then
+            echo "✅ [PASS] tests/optimizer/${test_name} (opt-ast + e2e + equivalence)"
+            OK_COUNT=$((OK_COUNT + 1))
+        else
+            FAIL_COUNT=$((FAIL_COUNT + 1))
+        fi
+    done
+fi
+
 # Test Error Scenarios (tests/err)
 if [ -d "${REPO_DIR}/tests/err" ]; then
     for src in "${REPO_DIR}/tests/err"/*.src; do

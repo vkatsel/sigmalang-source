@@ -1,0 +1,5 @@
+Program
+  Decl used_val npc yap
+    Number 42
+  Print
+    Var used_val

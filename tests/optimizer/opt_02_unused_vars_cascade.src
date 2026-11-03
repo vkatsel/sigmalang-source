@@ -1,0 +1,7 @@
+yap npc a := 10;
+yap npc b := a + 5;
+yap npc c := b * 2;
+yap npc d := c - 1;
+yap npc answer := 99;
+spit_fax(answer);
+
