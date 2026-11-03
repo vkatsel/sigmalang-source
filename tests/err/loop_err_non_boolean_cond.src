@@ -1,0 +1,4 @@
+while 42 {
+    spit_fax(1);
+}
+

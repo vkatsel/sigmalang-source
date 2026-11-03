@@ -1,0 +1,53 @@
+Program
+  Decl sum npc yap
+    Number 0
+  Decl x npc yap
+    Number 100
+  For i
+    Start
+      Number 1
+    End
+      Number 4
+    Body
+      Decl x npc yap
+        BinOp *
+          Var i
+          Number 10
+      Assign sum
+        BinOp +
+          Var sum
+          Var x
+  Print
+    Var sum
+  Print
+    Var x
+  While
+    Condition
+      Bool cringe
+    Body
+      Assign x
+        BinOp +
+          Var x
+          Number 999
+  For k
+    Start
+      Number 10
+    End
+      Number 10
+    Body
+      Assign x
+        BinOp +
+          Var x
+          Number 999
+  For m
+    Start
+      Number 20
+    End
+      Number 5
+    Body
+      Assign x
+        BinOp +
+          Var x
+          Number 999
+  Print
+    Var x

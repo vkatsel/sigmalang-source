@@ -1,0 +1,35 @@
+Program
+  Decl sum npc yap
+    Number 0
+  Decl i npc yap
+    Number 0
+  While
+    Condition
+      BinOp <
+        Var i
+        Number 5
+    Body
+      Assign sum
+        BinOp +
+          Var sum
+          Var i
+      Assign i
+        BinOp +
+          Var i
+          Number 1
+  Print
+    Var sum
+  Decl total npc yap
+    Number 0
+  For j
+    Start
+      Number 1
+    End
+      Number 6
+    Body
+      Assign total
+        BinOp +
+          Var total
+          Var j
+  Print
+    Var total

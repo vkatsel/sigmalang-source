@@ -1,0 +1,13 @@
+yap npc total_iterations := 0;
+
+for row in 0 .. 3 {
+    yap npc col := 0;
+    while hot {
+        break fr col == 3;
+        total_iterations := total_iterations + 1;
+        col := col + 1;
+    }
+}
+
+spit_fax(total_iterations);
+

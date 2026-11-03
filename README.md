@@ -161,6 +161,69 @@ true
 
 ---
 
+### 1.8 Loops & Control Flow (`as_long_as` / `while`, `streak` / `for`, `ragequit` / `break`) [Stage 3 Feature]
+
+- **Rule (`as_long_as` / `while`)**: An `as_long_as` (or `while`) loop checks a condition expression before every iteration. The condition must be of boolean type `take` (`bool`). If the condition evaluates to `hot` (`true`), the loop body executes; otherwise, control transfers to the loop exit block.
+- **Rule (`streak` / `for` over integer range)**: A `streak` (or `for`) loop iterates an induction variable over a half-open integer range `start .. end` (`[start, end)`). Both `start` and `end` bounds must be integer expressions of the same type (`npc` or `sigma`). The loop induction variable is implicitly declared with `canon` in the loop's local scope and increments by 1 at the end of each iteration until reaching or exceeding `end`.
+- **Rule (Local Scoping & Nesting)**: Each loop iteration executes within its own local scope. Variables declared in the loop body shadow outer declarations and cannot be accessed outside the loop. Loops may be nested arbitrarily inside other loops, functions, or conditionals.
+- **Rule (`ragequit` / `break`)**: An optional `ragequit` (or `break`) statement immediately terminates the innermost enclosing loop and transfers control to its exit block. Using `ragequit` outside of a loop is a compile-time semantic error. `ragequit` also supports conditional execution via postfix `fr` (e.g. `ragequit fr i == 5;`).
+
+#### Example 1: `as_long_as` loop with postfix `ragequit`
+```sigmalang
+yap npc sum := 0;
+yap npc i := 0;
+as_long_as hot {
+    sum := sum + i;
+    i := i + 1;
+    ragequit fr i == 5;
+}
+spit_fax(sum); # prints 10
+```
+
+#### Example 2: Nested `streak` loop with range iteration
+```sigmalang
+yap npc total := 0;
+streak r in 0 .. 3 {
+    streak c in 0 .. 4 {
+        total := total + 1;
+    }
+}
+spit_fax(total); # prints 12
+```
+for r in 0 .. 3 {
+    for c in 0 .. 4 {
+        total := total + 1;
+    }
+}
+spit_fax(total); # prints 12
+```
+
+#### LLVM IR Excerpt & Explanation (Task 1 Deliverable)
+Below is an excerpt of the LLVM IR produced by `LLVMCodeGenerator` for a `while` loop:
+
+```llvm
+while.cond:
+  %"i" = load i32, i32* @"_global_i"
+  %".4" = icmp slt i32 %"i", 5
+  br i1 %".4", label %"while.body", label %"while.exit"
+while.body:
+  %"sum" = load i32, i32* @"_global_sum"
+  %"i.1" = load i32, i32* @"_global_i"
+  %".6" = add i32 %"sum", %"i.1"
+  store i32 %".6", i32* @"_global_sum"
+  %"i.2" = load i32, i32* @"_global_i"
+  %".8" = add i32 %"i.2", 1
+  store i32 %".8", i32* @"_global_i"
+  br label %"while.cond"
+while.exit:
+```
+
+* **Condition block (`while.cond`)**: Loads the loop variable, compares it against the bound with `icmp slt`, and performs conditional branching (`br i1 ...`) to either enter `while.body` or leave through `while.exit`.
+* **Body block & back edge (`while.body`)**: Executes the loop statements in a nested variable scope and finishes with an unconditional branch `br label %"while.cond"` — the **back edge** that routes execution back to the condition check for the next iteration.
+* **Exit block (`while.exit`)**: Acts as the merge target reached either when the loop condition evaluates to false (`cringe`) or when a `break` statement transfers control directly out of the loop.
+
+---
+
 ## 2. Requirements & Setup
 
 ### Environment
@@ -209,7 +272,7 @@ compilation error: line 11:16: cannot call mutating member function 'shift' on c
 
 ## 4. Running the Test Suite
 
-Run all 61 automated tests (Stage 1 AST & error tests, Stage 2 end-to-end LLVM IR execution tests with `.expected` and `.in`, and Stage 2 negative semantic error tests with `.err`):
+Run all 68 automated tests (Stage 1 AST & error tests, Stage 2 end-to-end LLVM IR execution tests with `.expected` and `.in`, Stage 2 negative semantic error tests with `.err`, and Stage 3 loop tests):
 ```bash
 ./run_tests.sh
 ```

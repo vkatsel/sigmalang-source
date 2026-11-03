@@ -161,6 +161,47 @@ class IfStmtNode(StmtNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
+class WhileStmtNode(StmtNode):
+    cond: ExprNode
+    body: list[StmtNode]
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}While"]
+        lines.append(f"{sp}  Condition")
+        lines.append(self.cond.dump(indent + 4))
+        lines.append(f"{sp}  Body")
+        for s in self.body:
+            lines.append(s.dump(indent + 4))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class ForStmtNode(StmtNode):
+    var_name: str
+    start: ExprNode
+    end: ExprNode
+    body: list[StmtNode]
+    var_type: str = "npc"
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}For {self.var_name}"]
+        lines.append(f"{sp}  Start")
+        lines.append(self.start.dump(indent + 4))
+        lines.append(f"{sp}  End")
+        lines.append(self.end.dump(indent + 4))
+        lines.append(f"{sp}  Body")
+        for s in self.body:
+            lines.append(s.dump(indent + 4))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class BreakStmtNode(StmtNode):
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        return f"{sp}Break"
+
+@dataclass(slots=True)
 class ExitStmtNode(StmtNode):
     expr: ExprNode
 
@@ -406,6 +447,12 @@ class Parser:
                 stmt = self.parse_print()
             case TokenKind.IS_THIS_REAL:
                 return self.parse_if()
+            case TokenKind.WHILE:
+                return self.parse_while()
+            case TokenKind.FOR:
+                return self.parse_for()
+            case TokenKind.BREAK:
+                stmt = self.parse_break()
             case TokenKind.EXIT:
                 stmt = self.parse_exit()
             case _:
@@ -515,12 +562,9 @@ class Parser:
             fields=fields,
         )
 
-    def parse_if(self) -> IfStmtNode:
-        if_tok = self._eat(TokenKind.IS_THIS_REAL)
-        cond = self.parse_expr()
-
+    def _parse_block(self, block_name: str) -> list[StatementNode]:
         self._eat(TokenKind.LBRACE)
-        then_body: list[StatementNode] = []
+        body: list[StatementNode] = []
         while self._peek().kind not in (TokenKind.RBRACE, TokenKind.EOF):
             if self._peek().kind == TokenKind.SEMICOLON:
                 self.pos += 1
@@ -528,28 +572,22 @@ class Parser:
             stmt = self.parse_statement()
             if self._peek().kind == TokenKind.SEMICOLON:
                 self.pos += 1
-            then_body.append(stmt)
+            body.append(stmt)
 
-        if not then_body:
-            raise ParserError(self._peek().line, self._peek().col, "expected at least one statement in 'is_this_real' block")
+        if not body:
+            raise ParserError(self._peek().line, self._peek().col, f"expected at least one statement in '{block_name}' block")
         self._eat(TokenKind.RBRACE)
+        return body
+
+    def parse_if(self) -> IfStmtNode:
+        if_tok = self._eat(TokenKind.IS_THIS_REAL)
+        cond = self.parse_expr()
+        then_body = self._parse_block("is_this_real")
 
         else_body: list[StatementNode] | None = None
         if self._peek().kind == TokenKind.NAH:
             self.pos += 1
-            self._eat(TokenKind.LBRACE)
-            else_body = []
-            while self._peek().kind not in (TokenKind.RBRACE, TokenKind.EOF):
-                if self._peek().kind == TokenKind.SEMICOLON:
-                    self.pos += 1
-                    continue
-                stmt = self.parse_statement()
-                if self._peek().kind == TokenKind.SEMICOLON:
-                    self.pos += 1
-                else_body.append(stmt)
-            if not else_body:
-                raise ParserError(self._peek().line, self._peek().col, "expected at least one statement in 'nah' block")
-            self._eat(TokenKind.RBRACE)
+            else_body = self._parse_block("nah")
 
         return IfStmtNode(
             line=if_tok.line,
@@ -558,6 +596,38 @@ class Parser:
             then_body=then_body,
             else_body=else_body,
         )
+
+    def parse_while(self) -> WhileStmtNode:
+        while_tok = self._eat(TokenKind.WHILE)
+        cond = self.parse_expr()
+        body = self._parse_block(while_tok.text or "while")
+        return WhileStmtNode(
+            line=while_tok.line,
+            col=while_tok.col,
+            cond=cond,
+            body=body,
+        )
+
+    def parse_for(self) -> ForStmtNode:
+        for_tok = self._eat(TokenKind.FOR)
+        var_tok = self._eat(TokenKind.IDENT)
+        self._eat(TokenKind.IN)
+        start_expr = self.parse_expr()
+        self._eat(TokenKind.DOTDOT)
+        end_expr = self.parse_expr()
+        body = self._parse_block(for_tok.text or "for")
+        return ForStmtNode(
+            line=for_tok.line,
+            col=for_tok.col,
+            var_name=var_tok.text,
+            start=start_expr,
+            end=end_expr,
+            body=body,
+        )
+
+    def parse_break(self) -> BreakStmtNode:
+        tok = self._eat(TokenKind.BREAK)
+        return BreakStmtNode(line=tok.line, col=tok.col)
 
     def parse_exit(self) -> ExitStmtNode:
         exit_tok = self._eat(TokenKind.EXIT)
@@ -568,13 +638,19 @@ class Parser:
         left = self.parse_arith()
 
         comp_tok = self._peek()
-        if comp_tok.kind in (TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ):
+        if comp_tok.kind in (
+            TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ,
+            TokenKind.LT, TokenKind.LTE, TokenKind.GT, TokenKind.GTE
+        ):
             self.pos += 1
             right = self.parse_arith()
 
             # Prevent double comparisons: a == b == c
             next_comp = self._peek()
-            if next_comp.kind in (TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ):
+            if next_comp.kind in (
+                TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ,
+                TokenKind.LT, TokenKind.LTE, TokenKind.GT, TokenKind.GTE
+            ):
                 raise ParserError(next_comp.line, next_comp.col, "multiple comparisons in a single expression are not allowed")
 
             return BinOpNode(

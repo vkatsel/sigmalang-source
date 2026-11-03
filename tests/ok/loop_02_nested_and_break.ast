@@ -1,0 +1,32 @@
+Program
+  Decl total_iterations npc yap
+    Number 0
+  For row
+    Start
+      Number 0
+    End
+      Number 3
+    Body
+      Decl col npc yap
+        Number 0
+      While
+        Condition
+          Bool hot
+        Body
+          If
+            Condition
+              BinOp ==
+                Var col
+                Number 3
+            Then
+              Break
+          Assign total_iterations
+            BinOp +
+              Var total_iterations
+              Number 1
+          Assign col
+            BinOp +
+              Var col
+              Number 1
+  Print
+    Var total_iterations

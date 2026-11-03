@@ -28,6 +28,13 @@ class TokenKind(enum.StrEnum):
     LORE = "lore"
     READ = "absorb"
     PRINT = "spit_fax"
+    AS_LONG_AS = "as_long_as"
+    STREAK = "streak"
+    IN = "in"
+    RAGEQUIT = "ragequit"
+    WHILE = AS_LONG_AS
+    FOR = STREAK
+    BREAK = RAGEQUIT
 
     # Boolean Literals
     HOT = "hot"
@@ -45,10 +52,15 @@ class TokenKind(enum.StrEnum):
     NEQ = "!="
     EMOJI_EQ = "🤝"
     EMOJI_NEQ = "💔"
+    LT = "<"
+    LTE = "<="
+    GT = ">"
+    GTE = ">="
     ARROW = "->"
     PLUS = "+"
     MINUS = "-"
     STAR = "*"
+    DOTDOT = ".."
     DOT = "."
     COMMA = ","
     LPAREN = "("
@@ -74,6 +86,13 @@ KEYWORDS: dict[str, TokenKind] = {
     "lore": TokenKind.LORE,
     "absorb": TokenKind.READ,
     "spit_fax": TokenKind.PRINT,
+    "as_long_as": TokenKind.AS_LONG_AS,
+    "while": TokenKind.AS_LONG_AS,
+    "streak": TokenKind.STREAK,
+    "for": TokenKind.STREAK,
+    "in": TokenKind.IN,
+    "ragequit": TokenKind.RAGEQUIT,
+    "break": TokenKind.RAGEQUIT,
     "hot": TokenKind.HOT,
     "cringe": TokenKind.CRINGE,
 }
@@ -198,7 +217,30 @@ class Lexer:
                 tokens.append(Token(TokenKind.STAR, "*", tok_line, tok_col))
                 continue
 
+            if b == ord("<"):
+                self._advance_byte()
+                if self._peek_byte() == ord("="):
+                    self._advance_byte()
+                    tokens.append(Token(TokenKind.LTE, "<=", tok_line, tok_col))
+                    continue
+                tokens.append(Token(TokenKind.LT, "<", tok_line, tok_col))
+                continue
+
+            if b == ord(">"):
+                self._advance_byte()
+                if self._peek_byte() == ord("="):
+                    self._advance_byte()
+                    tokens.append(Token(TokenKind.GTE, ">=", tok_line, tok_col))
+                    continue
+                tokens.append(Token(TokenKind.GT, ">", tok_line, tok_col))
+                continue
+
             if b == ord("."):
+                if self._peek_byte(1) == ord("."):
+                    self._advance_byte()
+                    self._advance_byte()
+                    tokens.append(Token(TokenKind.DOTDOT, "..", tok_line, tok_col))
+                    continue
                 self._advance_byte()
                 tokens.append(Token(TokenKind.DOT, ".", tok_line, tok_col))
                 continue

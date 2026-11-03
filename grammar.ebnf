@@ -11,8 +11,8 @@ squad_def     ::= "squad" ident "{" var_kind type ident [ ";" ] { var_kind type 
 lore_def      ::= "lore" ident "(" [ type ident { "," type ident } ] ")" "->" type "{" statement { statement } "}" ;
 
 (* Statements *)
-statement     ::= ( simple_stmt [ "fr" expr ] | if_stmt ) [ ";" ] ;
-simple_stmt   ::= decl | assign | print_stmt | exit_stmt ;
+statement     ::= ( simple_stmt [ "fr" expr ] | if_stmt | while_stmt | for_stmt ) [ ";" ] ;
+simple_stmt   ::= decl | assign | print_stmt | exit_stmt | break_stmt ;
 
 (* Declarations & Initialisation *)
 decl          ::= var_kind type ident ( ":=" | "👈🏻" ) ( expr | squad_init ) ;
@@ -34,11 +34,16 @@ print_stmt    ::= "spit_fax" "(" ( expr | string_lit ) ")" ;
 (* If-Else block: requires at least one statement in each block *)
 if_stmt       ::= "is_this_real" expr "{" statement { statement } "}" [ "nah" "{" statement { statement } "}" ] ;
 
+(* Loops & Control Flow (Stage 3 Feature) *)
+while_stmt    ::= ( "as_long_as" | "while" ) expr "{" statement { statement } "}" ;
+for_stmt      ::= ( "streak" | "for" ) ident "in" expr ".." expr "{" statement { statement } "}" ;
+break_stmt    ::= "ragequit" | "break" ;
+
 exit_stmt     ::= "exit" factor ;
 
 (* Expressions *)
 expr          ::= arith [ comp_op arith ] ;
-comp_op       ::= "==" | "!=" | "🤝" | "💔" ;
+comp_op       ::= "==" | "!=" | "🤝" | "💔" | "<" | "<=" | ">" | ">=" ;
 
 arith         ::= term { add_op term } ;
 add_op        ::= "+" | "-" ;

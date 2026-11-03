@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 from src.parser import (
     ProgramNode, StmtNode, ExprNode, DeclNode, AssignNode,
-    IfStmtNode, ExitStmtNode, BinOpNode, LiteralNode, VarNode,
+    IfStmtNode, WhileStmtNode, ForStmtNode, BreakStmtNode,
+    ExitStmtNode, BinOpNode, LiteralNode, VarNode,
     CallNode, FieldAccessNode, MemberCallNode, SquadDefNode,
     LoreDefNode, SquadInitNode, PrintStmtNode, ReadNode,
     StringLiteralNode, FieldDef, ParamDef
@@ -74,6 +75,7 @@ class SemanticAnalyzer:
         self.name_origins: dict[int, tuple[str, str]] = {}
         self.call_origins: dict[int, tuple[str, str | None]] = {}
         self.deferred_mutability_checks: list[tuple[str, str, int, int, str]] = []
+        self.loop_depth = 0
 
     def set_type(self, node: ExprNode, type_name: str) -> str:
         self.expr_types[id(node)] = type_name
@@ -304,6 +306,13 @@ class SemanticAnalyzer:
                 return False
             case IfStmtNode():
                 return self._check_if(stmt)
+            case WhileStmtNode():
+                return self._check_while(stmt)
+            case ForStmtNode():
+                return self._check_for(stmt)
+            case BreakStmtNode():
+                self._check_break(stmt)
+                return False
             case ExitStmtNode():
                 self._check_exit(stmt)
                 return True
@@ -430,6 +439,53 @@ class SemanticAnalyzer:
 
         return then_exits and else_exits
 
+    def _check_while(self, node: WhileStmtNode) -> bool:
+        cond_type = self._check_expr(node.cond, expected_type="take")
+        if cond_type != "take":
+            raise SemanticError(node.cond.line, node.cond.col, f"while condition must be of type 'take', got '{cond_type}'")
+
+        self.local_scopes.append({})
+        self.loop_depth += 1
+        for s in node.body:
+            self._check_stmt(s)
+        self.loop_depth -= 1
+        self.local_scopes.pop()
+        return False
+
+    def _check_for(self, node: ForStmtNode) -> bool:
+        start_type = self._check_expr(node.start)
+        if start_type not in ("npc", "sigma"):
+            raise SemanticError(node.start.line, node.start.col, f"for loop start bound must be integer ('npc' or 'sigma'), got '{start_type}'")
+
+        end_type = self._check_expr(node.end, expected_type=start_type)
+        if end_type not in ("npc", "sigma"):
+            raise SemanticError(node.end.line, node.end.col, f"for loop end bound must be integer ('npc' or 'sigma'), got '{end_type}'")
+
+        if start_type != end_type:
+            raise SemanticError(node.end.line, node.end.col, f"type mismatch in for loop range: start is '{start_type}', but end is '{end_type}'")
+
+        node.var_type = start_type
+        self.local_scopes.append({})
+        self.local_scopes[-1][node.var_name] = VarInfo(
+            name=node.var_name,
+            type_name=node.var_type,
+            kind="canon",
+            mutable=False,
+            line=node.line,
+            col=node.col,
+        )
+
+        self.loop_depth += 1
+        for s in node.body:
+            self._check_stmt(s)
+        self.loop_depth -= 1
+        self.local_scopes.pop()
+        return False
+
+    def _check_break(self, node: BreakStmtNode) -> None:
+        if self.loop_depth == 0:
+            raise SemanticError(node.line, node.col, "'break' is only allowed inside a loop")
+
     def _check_exit(self, exit_stmt: ExitStmtNode) -> None:
         expected = self.current_lore.return_type if self.current_lore else None
         expr_type = self._check_expr(exit_stmt.expr, expected_type=expected)
@@ -463,7 +519,9 @@ class SemanticAnalyzer:
                 return self.set_type(expr, "npc")
 
             case BinOpNode():
-                is_comp = expr.op in ("==", "!=", "🤝", "💔")
+                is_equality = expr.op in ("==", "!=", "🤝", "💔")
+                is_relational = expr.op in ("<", "<=", ">", ">=")
+                is_comp = is_equality or is_relational
                 op_expected = expected_type if not is_comp else None
                 if isinstance(expr.left, LiteralNode) and not isinstance(expr.right, LiteralNode):
                     right_type = self._check_expr(expr.right, expected_type=op_expected)
@@ -477,9 +535,13 @@ class SemanticAnalyzer:
                 if left_type != right_type:
                     raise SemanticError(expr.line, expr.col, f"type mismatch for operator '{expr.op}': '{left_type}' and '{right_type}'")
 
-                if is_comp:
+                if is_equality:
                     if left_type not in ("npc", "sigma", "take"):
                         raise SemanticError(expr.line, expr.col, f"cannot compare values of type '{left_type}'")
+                    return self.set_type(expr, "take")
+                if is_relational:
+                    if left_type not in ("npc", "sigma"):
+                        raise SemanticError(expr.line, expr.col, f"cannot order values of type '{left_type}'")
                     return self.set_type(expr, "take")
                 if left_type not in ("npc", "sigma"):
                     raise SemanticError(expr.line, expr.col, f"operator '{expr.op}' not supported for type '{left_type}'")

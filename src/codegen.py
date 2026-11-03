@@ -13,7 +13,8 @@ import llvmlite.binding as llvm
 
 from src.parser import (
     ProgramNode, StmtNode, ExprNode, DeclNode, AssignNode,
-    IfStmtNode, ExitStmtNode, BinOpNode, LiteralNode, VarNode,
+    IfStmtNode, WhileStmtNode, ForStmtNode, BreakStmtNode,
+    ExitStmtNode, BinOpNode, LiteralNode, VarNode,
     CallNode, FieldAccessNode, MemberCallNode, SquadDefNode,
     LoreDefNode, SquadInitNode, PrintStmtNode, ReadNode,
     StringLiteralNode
@@ -40,6 +41,7 @@ class LLVMCodeGenerator:
         self.global_vars: dict[str, ir.GlobalVariable] = {}
         self.cached_strings: dict[str, ir.GlobalVariable] = {}
         self.var_scopes: list[dict[str, ir.Value]] = []
+        self.loop_exit_blocks: list[ir.Block] = []
 
         self.builder: ir.IRBuilder | None = None
         self.function: ir.Function | None = None
@@ -318,6 +320,76 @@ class LLVMCodeGenerator:
 
                 self.builder.position_at_end(merge_bb)
 
+            case WhileStmtNode():
+                cond_bb = self.function.append_basic_block("while.cond")
+                body_bb = self.function.append_basic_block("while.body")
+                exit_bb = self.function.append_basic_block("while.exit")
+
+                self.builder.branch(cond_bb)
+
+                self.builder.position_at_end(cond_bb)
+                cond_val = self._emit_expr(stmt.cond)
+                self.builder.cbranch(cond_val, body_bb, exit_bb)
+
+                self.builder.position_at_end(body_bb)
+                self.loop_exit_blocks.append(exit_bb)
+                self.var_scopes.append({})
+                for s in stmt.body:
+                    self._emit_stmt(s)
+                self.var_scopes.pop()
+                self.loop_exit_blocks.pop()
+
+                if not self.builder.block.is_terminated:
+                    self.builder.branch(cond_bb)
+
+                self.builder.position_at_end(exit_bb)
+
+            case ForStmtNode():
+                var_llvm_type = self._llvm_type(stmt.var_type)
+                slot = self._entry_alloca(var_llvm_type, name=stmt.var_name)
+                start_val = self._emit_expr(stmt.start)
+                end_val = self._emit_expr(stmt.end)
+                if start_val.type != var_llvm_type and isinstance(var_llvm_type, ir.IntType):
+                    start_val = self.builder.sext(start_val, var_llvm_type)
+                if end_val.type != var_llvm_type and isinstance(var_llvm_type, ir.IntType):
+                    end_val = self.builder.sext(end_val, var_llvm_type)
+                self.builder.store(start_val, slot)
+
+                cond_bb = self.function.append_basic_block("for.cond")
+                body_bb = self.function.append_basic_block("for.body")
+                step_bb = self.function.append_basic_block("for.step")
+                exit_bb = self.function.append_basic_block("for.exit")
+
+                self.builder.branch(cond_bb)
+
+                self.builder.position_at_end(cond_bb)
+                curr_i = self.builder.load(slot, name=stmt.var_name)
+                cond_val = self.builder.icmp_signed("<", curr_i, end_val)
+                self.builder.cbranch(cond_val, body_bb, exit_bb)
+
+                self.builder.position_at_end(body_bb)
+                self.loop_exit_blocks.append(exit_bb)
+                self.var_scopes.append({stmt.var_name: slot})
+                for s in stmt.body:
+                    self._emit_stmt(s)
+                self.var_scopes.pop()
+                self.loop_exit_blocks.pop()
+
+                if not self.builder.block.is_terminated:
+                    self.builder.branch(step_bb)
+
+                self.builder.position_at_end(step_bb)
+                step_curr_i = self.builder.load(slot, name=f"{stmt.var_name}_step")
+                step_next_i = self.builder.add(step_curr_i, ir.Constant(var_llvm_type, 1))
+                self.builder.store(step_next_i, slot)
+                self.builder.branch(cond_bb)
+
+                self.builder.position_at_end(exit_bb)
+
+            case BreakStmtNode():
+                exit_bb = self.loop_exit_blocks[-1]
+                self.builder.branch(exit_bb)
+
             case ExitStmtNode():
                 val = self._emit_expr(stmt.expr)
                 if self.current_lore:
@@ -404,6 +476,14 @@ class LLVMCodeGenerator:
                         return self.builder.icmp_signed("==", left_val, right_val)
                     case "!=" | "💔":
                         return self.builder.icmp_signed("!=", left_val, right_val)
+                    case "<":
+                        return self.builder.icmp_signed("<", left_val, right_val)
+                    case "<=":
+                        return self.builder.icmp_signed("<=", left_val, right_val)
+                    case ">":
+                        return self.builder.icmp_signed(">", left_val, right_val)
+                    case ">=":
+                        return self.builder.icmp_signed(">=", left_val, right_val)
                     case _:
                         raise RuntimeError(f"Unknown operator '{expr.op}'")
 
