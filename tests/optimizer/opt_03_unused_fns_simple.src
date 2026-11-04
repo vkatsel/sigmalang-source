@@ -1,0 +1,12 @@
+lore dead_func(npc x) -> npc {
+    exit (x * 10);
+}
+
+lore living_func(npc x) -> npc {
+    exit (x + 1);
+}
+
+yap npc r1 := living_func(5);
+yap npc r2 := living_func(10);
+spit_fax(r1 + r2);
+

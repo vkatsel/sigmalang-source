@@ -1,0 +1,15 @@
+yap npc sum := 0;
+yap npc i := 0;
+
+while i < 5 {
+    sum := sum + i;
+    i := i + 1;
+}
+spit_fax(sum);
+
+yap npc total := 0;
+for j in 1 .. 6 {
+    total := total + j;
+}
+spit_fax(total);
+

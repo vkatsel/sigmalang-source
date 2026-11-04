@@ -1,0 +1,18 @@
+Program
+  Lore scale_big(sigma base, sigma mult) -> sigma
+    Exit
+      BinOp +
+        BinOp *
+          Var base
+          Var mult
+        Number 42
+  Decl big sigma canon
+    Number 5000000000
+  Decl out sigma canon
+    Call scale_big
+      Var big
+      Number 2
+  Print
+    Var out
+  Exit
+    Number 0

@@ -1,0 +1,257 @@
+lore next_seed(npc s) -> npc {
+    yap npc res := s * 37 + 17;
+    as_long_as res >= 10000 {
+        res := res - 10000;
+    }
+    as_long_as res >= 1000 {
+        res := res - 1000;
+    }
+    exit res;
+}
+
+lore get_card_val(npc s) -> npc {
+    yap npc c := s;
+    as_long_as c >= 100 {
+        c := c - 100;
+    }
+    as_long_as c >= 10 {
+        c := c - 10;
+    }
+    exit (c + 2);
+}
+
+squad BlackjackTable {
+    yap npc chips;
+    yap npc current_bet;
+    yap npc player_score;
+    yap npc player_aces;
+    yap npc dealer_score;
+    yap npc dealer_aces;
+    yap npc dealer_hidden_card;
+    yap npc rng_seed;
+
+    lore reset_round() -> npc {
+        current_bet := 0;
+        player_score := 0;
+        player_aces := 0;
+        dealer_score := 0;
+        dealer_aces := 0;
+        dealer_hidden_card := 0;
+        exit 0;
+    }
+
+    lore deal_player() -> npc {
+        rng_seed := next_seed(rng_seed);
+        yap npc card := get_card_val(rng_seed);
+        player_score := player_score + card;
+        is_this_real card == 11 {
+            player_aces := player_aces + 1;
+        }
+        is_this_real player_score > 21 {
+            is_this_real player_aces > 0 {
+                player_score := player_score - 10;
+                player_aces := player_aces - 1;
+            }
+        }
+        spit_fax("Player card:");
+        spit_fax(card);
+        exit card;
+    }
+
+    lore deal_dealer() -> npc {
+        rng_seed := next_seed(rng_seed);
+        yap npc card := get_card_val(rng_seed);
+        dealer_score := dealer_score + card;
+        is_this_real card == 11 {
+            dealer_aces := dealer_aces + 1;
+        }
+        is_this_real dealer_score > 21 {
+            is_this_real dealer_aces > 0 {
+                dealer_score := dealer_score - 10;
+                dealer_aces := dealer_aces - 1;
+            }
+        }
+        spit_fax("Dealer card:");
+        spit_fax(card);
+        exit card;
+    }
+
+    lore deal_dealer_hidden() -> npc {
+        rng_seed := next_seed(rng_seed);
+        dealer_hidden_card := get_card_val(rng_seed);
+        spit_fax("Dealer card:");
+        spit_fax("?");
+        exit dealer_hidden_card;
+    }
+
+    lore reveal_dealer_hidden() -> npc {
+        dealer_score := dealer_score + dealer_hidden_card;
+        is_this_real dealer_hidden_card == 11 {
+            dealer_aces := dealer_aces + 1;
+        }
+        is_this_real dealer_score > 21 {
+            is_this_real dealer_aces > 0 {
+                dealer_score := dealer_score - 10;
+                dealer_aces := dealer_aces - 1;
+            }
+        }
+        spit_fax("Dealer hidden card was:");
+        spit_fax(dealer_hidden_card);
+        dealer_hidden_card := 0;
+        exit dealer_score;
+    }
+
+    lore payout(npc outcome) -> npc {
+        is_this_real outcome == 1 {
+            chips := chips + current_bet;
+            spit_fax("Result: You WIN!");
+        }
+        is_this_real outcome == 2 {
+            yap npc rem := current_bet;
+            yap npc half := 0;
+            as_long_as rem >= 2 {
+                rem := rem - 2;
+                half := half + 1;
+            }
+            chips := chips + current_bet + half;
+            spit_fax("Result: BLACKJACK! 3:2 Payout!");
+        }
+        is_this_real outcome == 3 {
+            spit_fax("Result: PUSH (Tie). Bet returned.");
+        }
+        is_this_real outcome == 0 {
+            chips := chips - current_bet;
+            spit_fax("Result: Dealer wins. You lost your bet.");
+        }
+        spit_fax("Current chips balance:");
+        spit_fax(chips);
+        exit chips;
+    }
+}
+
+spit_fax("=== Welcome to Sigma Blackjack ===");
+spit_fax("Enter lucky seed number:");
+yap npc user_seed := absorb();
+
+yap BlackjackTable table := { 100, 0, 0, 0, 0, 0, 0, user_seed };
+spit_fax("Starting chips:");
+spit_fax(table.chips);
+
+yap npc dummy := 0;
+
+as_long_as table.chips > 0 {
+    dummy := table.reset_round();
+    spit_fax("--- New Round ---");
+    spit_fax("Enter bet (1 to chips, or 0 to cash out):");
+    yap npc bet := absorb();
+
+    is_this_real bet == 0 {
+        spit_fax("Cashing out. Thanks for playing!");
+        ragequit;
+    }
+
+    is_this_real bet > table.chips {
+        spit_fax("Bet too high! You do not have enough chips.");
+    }
+    nah {
+        table.current_bet := bet;
+
+        spit_fax("Dealing player initial cards:");
+        streak p_i in 1 .. 3 {
+            dummy := table.deal_player();
+        }
+        spit_fax("Your total score:");
+        spit_fax(table.player_score);
+
+        spit_fax("Dealing dealer initial cards:");
+        dummy := table.deal_dealer();
+        dummy := table.deal_dealer_hidden();
+
+        is_this_real table.player_score == 21 {
+            dummy := table.reveal_dealer_hidden();
+            spit_fax("Dealer total score:");
+            spit_fax(table.dealer_score);
+            is_this_real table.dealer_score == 21 {
+                dummy := table.payout(3);
+            }
+            nah {
+                dummy := table.payout(2);
+            }
+        }
+        nah {
+            yap npc player_turn := 1;
+            as_long_as player_turn == 1 {
+                is_this_real table.player_score > 21 {
+                    spit_fax("BUST! You went over 21!");
+                    player_turn := 0;
+                }
+                nah {
+                    spit_fax("Choose action: 1 (Hit), 2 (Stand), 3 (Double Down):");
+                    yap npc action := absorb();
+
+                    is_this_real action == 1 {
+                        dummy := table.deal_player();
+                        spit_fax("Your total score:");
+                        spit_fax(table.player_score);
+                    }
+                    is_this_real action == 2 {
+                        player_turn := 0;
+                    }
+                    is_this_real action == 3 {
+                        yap npc double_bet := table.current_bet * 2;
+                        is_this_real double_bet <= table.chips {
+                            table.current_bet := double_bet;
+                            spit_fax("Double down! New bet:");
+                            spit_fax(table.current_bet);
+                            dummy := table.deal_player();
+                            spit_fax("Your total score:");
+                            spit_fax(table.player_score);
+                            player_turn := 0;
+                        }
+                        nah {
+                            spit_fax("Cannot double down: not enough chips!");
+                        }
+                    }
+                }
+            }
+
+            is_this_real table.player_score > 21 {
+                dummy := table.payout(0);
+            }
+            nah {
+                spit_fax("--- Dealer Turn ---");
+                dummy := table.reveal_dealer_hidden();
+
+                as_long_as table.dealer_score < 17 {
+                    dummy := table.deal_dealer();
+                }
+
+                spit_fax("Dealer total score:");
+                spit_fax(table.dealer_score);
+
+                is_this_real table.dealer_score > 21 {
+                    spit_fax("Dealer BUST! Dealer went over 21.");
+                    dummy := table.payout(1);
+                }
+                nah {
+                    is_this_real table.player_score > table.dealer_score {
+                        dummy := table.payout(1);
+                    }
+                    nah {
+                        is_this_real table.player_score == table.dealer_score {
+                            dummy := table.payout(3);
+                        }
+                        nah {
+                            dummy := table.payout(0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+spit_fax("=== Game Over ===");
+spit_fax("Final chips:");
+spit_fax(table.chips);
+exit 0;

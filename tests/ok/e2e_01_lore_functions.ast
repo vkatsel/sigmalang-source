@@ -1,0 +1,28 @@
+Program
+  Lore add(npc a, npc b) -> npc
+    Decl res npc canon
+      BinOp +
+        Var a
+        Var b
+    Exit
+      Var res
+  Lore compute(npc x) -> npc
+    Exit
+      Call add
+        Call add
+          Var x
+          Number 1
+        Call double_val
+          Var x
+  Lore double_val(npc v) -> npc
+    Exit
+      BinOp *
+        Var v
+        Number 2
+  Decl ans npc canon
+    Call compute
+      Number 5
+  Print
+    Var ans
+  Exit
+    Number 0

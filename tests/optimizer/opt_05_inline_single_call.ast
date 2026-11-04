@@ -1,0 +1,11 @@
+Program
+  Decl num npc yap
+    Number 21
+  Decl _inl_1_x npc canon
+    Var num
+  Decl result npc yap
+    BinOp *
+      Var _inl_1_x
+      Number 2
+  Print
+    Var result

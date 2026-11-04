@@ -6,10 +6,19 @@ if [ ! -f "$PYTHON" ]; then
     PYTHON="python3"
 fi
 
+if [ -d "/home/ubuntu/lcd/lib/python3.12/site-packages" ]; then
+    export PYTHONPATH="/home/ubuntu/lcd/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+elif [ -d "$HOME/lcd/lib/python3.12/site-packages" ]; then
+    export PYTHONPATH="$HOME/lcd/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+fi
+
 echo "=== Running sigmaLang Test Suite ==="
 OK_COUNT=0
 FAIL_COUNT=0
 TOTAL=0
+
+TMP_LL="/tmp/sigmalang_test_$$.ll"
+trap 'rm -f "$TMP_LL"' EXIT
 
 # Test Happy Path (tests/ok)
 if [ -d "${REPO_DIR}/tests/ok" ]; then
@@ -18,32 +27,147 @@ if [ -d "${REPO_DIR}/tests/ok" ]; then
         TOTAL=$((TOTAL + 1))
         test_name="$(basename "$src" .src)"
         expected_ast="${REPO_DIR}/tests/ok/${test_name}.ast"
+        expected_out="${REPO_DIR}/tests/ok/${test_name}.expected"
+        input_file="${REPO_DIR}/tests/ok/${test_name}.in"
 
-        actual_output="$("$PYTHON" "${REPO_DIR}/compiler.py" --ast "$src" 2>&1)"
-        exit_code=$?
-
-        if [ $exit_code -ne 0 ]; then
-            echo "❌ [FAIL] tests/ok/${test_name}: exited with non-zero code ${exit_code}"
-            echo "$actual_output"
-            FAIL_COUNT=$((FAIL_COUNT + 1))
+        if [ ! -f "$expected_ast" ] && [ ! -f "$expected_out" ]; then
+            echo "⚠️  [SKIP] tests/ok/${test_name}: missing .ast or .expected file"
             continue
         fi
 
+        test_failed=0
+
         if [ -f "$expected_ast" ]; then
-            expected_content="$(cat "$expected_ast")"
-            if [ "$actual_output" == "$expected_content" ]; then
-                echo "✅ [PASS] tests/ok/${test_name}"
-                OK_COUNT=$((OK_COUNT + 1))
+            actual_ast="$("$PYTHON" "${REPO_DIR}/compiler.py" --ast "$src" 2>&1)"
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] tests/ok/${test_name} (AST): exited with non-zero code ${exit_code}"
+                echo "$actual_ast"
+                test_failed=1
             else
-                echo "❌ [FAIL] tests/ok/${test_name}: output mismatch"
-                echo "--- Expected ---"
-                echo "$expected_content"
-                echo "--- Actual ---"
-                echo "$actual_output"
-                FAIL_COUNT=$((FAIL_COUNT + 1))
+                expected_ast_content="$(cat "$expected_ast")"
+                if [ "$actual_ast" != "$expected_ast_content" ]; then
+                    echo "❌ [FAIL] tests/ok/${test_name} (AST): output mismatch"
+                    echo "--- Expected AST ---"
+                    echo "$expected_ast_content"
+                    echo "--- Actual AST ---"
+                    echo "$actual_ast"
+                    test_failed=1
+                fi
             fi
+        fi
+
+        if [ $test_failed -eq 0 ] && [ -f "$expected_out" ]; then
+            if [ -f "$input_file" ]; then
+                actual_run="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" < "$input_file" 2>&1)"
+            else
+                actual_run="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" 2>&1)"
+            fi
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] tests/ok/${test_name} (E2E): execution failed with code ${exit_code}"
+                echo "$actual_run"
+                test_failed=1
+            else
+                expected_out_content="$(cat "$expected_out" | tr -d '\r')"
+                actual_run_clean="$(echo "$actual_run" | tr -d '\r')"
+                if [ "$actual_run_clean" != "$expected_out_content" ]; then
+                    echo "❌ [FAIL] tests/ok/${test_name} (E2E): runtime output mismatch"
+                    echo "--- Expected Output ---"
+                    echo "$expected_out_content"
+                    echo "--- Actual Output ---"
+                    echo "$actual_run_clean"
+                    test_failed=1
+                fi
+            fi
+        fi
+
+        if [ $test_failed -eq 0 ]; then
+            if [ -f "$expected_out" ]; then
+                echo "✅ [PASS] tests/ok/${test_name} (e2e)"
+            else
+                echo "✅ [PASS] tests/ok/${test_name}"
+            fi
+            OK_COUNT=$((OK_COUNT + 1))
         else
-            echo "⚠️  [SKIP] tests/ok/${test_name}: missing .ast file"
+            FAIL_COUNT=$((FAIL_COUNT + 1))
+        fi
+    done
+fi
+
+# Test Optimizer Transformations (tests/optimizer)
+if [ -d "${REPO_DIR}/tests/optimizer" ]; then
+    for src in "${REPO_DIR}/tests/optimizer"/*.src; do
+        [ -e "$src" ] || continue
+        TOTAL=$((TOTAL + 1))
+        test_name="$(basename "$src" .src)"
+        expected_ast="${REPO_DIR}/tests/optimizer/${test_name}.ast"
+        expected_out="${REPO_DIR}/tests/optimizer/${test_name}.expected"
+        input_file="${REPO_DIR}/tests/optimizer/${test_name}.in"
+
+        test_failed=0
+
+        if [ -f "$expected_ast" ]; then
+            actual_ast="$("$PYTHON" "${REPO_DIR}/compiler.py" --ast --optimize "$src" 2>&1)"
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] tests/optimizer/${test_name} (Optimized AST): exited with non-zero code ${exit_code}"
+                echo "$actual_ast"
+                test_failed=1
+            else
+                expected_ast_content="$(cat "$expected_ast")"
+                if [ "$actual_ast" != "$expected_ast_content" ]; then
+                    echo "❌ [FAIL] tests/optimizer/${test_name} (Optimized AST): mismatch"
+                    echo "--- Expected AST ---"
+                    echo "$expected_ast_content"
+                    echo "--- Actual AST ---"
+                    echo "$actual_ast"
+                    test_failed=1
+                fi
+            fi
+        fi
+
+        if [ $test_failed -eq 0 ] && [ -f "$expected_out" ]; then
+            # Run with --optimize
+            if [ -f "$input_file" ]; then
+                actual_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" --optimize < "$input_file" 2>&1)"
+            else
+                actual_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" --optimize 2>&1)"
+            fi
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] tests/optimizer/${test_name} (Run with --optimize): failed with code ${exit_code}"
+                echo "$actual_opt"
+                test_failed=1
+            else
+                expected_out_content="$(cat "$expected_out" | tr -d '\r')"
+                actual_opt_clean="$(echo "$actual_opt" | tr -d '\r')"
+                if [ "$actual_opt_clean" != "$expected_out_content" ]; then
+                    echo "❌ [FAIL] tests/optimizer/${test_name} (Run with --optimize): output mismatch"
+                    test_failed=1
+                fi
+            fi
+
+            # Run without --optimize (verify equivalence)
+            if [ $test_failed -eq 0 ]; then
+                if [ -f "$input_file" ]; then
+                    actual_no_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" < "$input_file" 2>&1)"
+                else
+                    actual_no_opt="$("${REPO_DIR}/run.sh" "$src" "$TMP_LL" 2>&1)"
+                fi
+                actual_no_opt_clean="$(echo "$actual_no_opt" | tr -d '\r')"
+                if [ "$actual_no_opt_clean" != "$expected_out_content" ]; then
+                    echo "❌ [FAIL] tests/optimizer/${test_name} (Equivalence without --optimize): output mismatch"
+                    test_failed=1
+                fi
+            fi
+        fi
+
+        if [ $test_failed -eq 0 ]; then
+            echo "✅ [PASS] tests/optimizer/${test_name} (opt-ast + e2e + equivalence)"
+            OK_COUNT=$((OK_COUNT + 1))
+        else
+            FAIL_COUNT=$((FAIL_COUNT + 1))
         fi
     done
 fi
@@ -56,8 +180,7 @@ if [ -d "${REPO_DIR}/tests/err" ]; then
         test_name="$(basename "$src" .src)"
         expected_err="${REPO_DIR}/tests/err/${test_name}.err"
 
-        # Capture stderr
-        actual_output="$("$PYTHON" "${REPO_DIR}/compiler.py" --ast "$src" 2>&1 1>/dev/null)"
+        actual_output="$("$PYTHON" "${REPO_DIR}/compiler.py" "$src" "$TMP_LL" 2>&1 1>/dev/null)"
         exit_code=$?
 
         if [ $exit_code -eq 0 ]; then
@@ -87,6 +210,67 @@ if [ -d "${REPO_DIR}/tests/err" ]; then
     done
 fi
 
+# Test Real Programs (programs/)
+if [ -d "${REPO_DIR}/programs" ]; then
+    for prog in "${REPO_DIR}/programs"/*.txt; do
+        [ -e "$prog" ] || continue
+        prog_base="$(basename "$prog" .txt)"
+        prog_dir="$(dirname "$prog")"
+
+        session_inputs=()
+        for s_in in "${prog_dir}/${prog_base}"*.in; do
+            [ -e "$s_in" ] && session_inputs+=("$s_in")
+        done
+
+        if [ ${#session_inputs[@]} -eq 0 ]; then
+            continue
+        fi
+
+        PROG_LL="/tmp/sigmalang_${prog_base}_$$.ll"
+        PROG_OBJ="/tmp/sigmalang_${prog_base}_$$.o"
+        PROG_BIN="/tmp/sigmalang_${prog_base}_$$"
+
+        "$PYTHON" "${REPO_DIR}/compiler.py" "$prog" "$PROG_LL" >/dev/null 2>&1
+        llc -filetype=obj -relocation-model=pic "$PROG_LL" -o "$PROG_OBJ" >/dev/null 2>&1
+        clang -fPIE "$PROG_OBJ" -o "$PROG_BIN" >/dev/null 2>&1
+
+        for input_file in "${session_inputs[@]}"; do
+            TOTAL=$((TOTAL + 1))
+            session_name="$(basename "$input_file" .in)"
+            expected_file="${prog_dir}/${session_name}.expected"
+
+            if [ ! -f "$expected_file" ]; then
+                echo "⚠️  [SKIP] programs/${session_name}: missing .expected file"
+                continue
+            fi
+
+            actual_run="$("$PROG_BIN" < "$input_file" 2>&1)"
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] programs/${session_name} (Native): execution failed with code ${exit_code}"
+                echo "$actual_run"
+                FAIL_COUNT=$((FAIL_COUNT + 1))
+            else
+                expected_out_content="$(cat "$expected_file" | tr -d '\r')"
+                actual_run_clean="$(echo "$actual_run" | tr -d '\r')"
+                if [ "$actual_run_clean" != "$expected_out_content" ]; then
+                    echo "❌ [FAIL] programs/${session_name} (Native): runtime output mismatch"
+                    echo "--- Expected Output ---"
+                    echo "$expected_out_content"
+                    echo "--- Actual Output ---"
+                    echo "$actual_run_clean"
+                    FAIL_COUNT=$((FAIL_COUNT + 1))
+                else
+                    echo "✅ [PASS] programs/${session_name} (native binary)"
+                    OK_COUNT=$((OK_COUNT + 1))
+                fi
+            fi
+        done
+
+        rm -f "$PROG_LL" "$PROG_OBJ" "$PROG_BIN"
+    done
+fi
+
 echo ""
 echo "=== Test Results: Total: ${TOTAL} | Passed: ${OK_COUNT} | Failed: ${FAIL_COUNT} ==="
 
@@ -95,3 +279,4 @@ if [ $FAIL_COUNT -eq 0 ] && [ $TOTAL -gt 0 ]; then
 else
     exit 1
 fi
+

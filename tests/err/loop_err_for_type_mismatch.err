@@ -1,0 +1,1 @@
+compilation error: line 1:15: for loop end bound must be integer ('npc' or 'sigma'), got 'take'

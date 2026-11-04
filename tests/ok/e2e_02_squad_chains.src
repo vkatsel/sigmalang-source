@@ -1,0 +1,15 @@
+squad Point {
+    yap npc x
+    yap npc y
+}
+
+squad Circle {
+    yap Point center
+    canon npc radius
+}
+
+yap Circle c 👈🏻 { { 3, 4 }, 10 }
+c.center.x 👈🏻 c.center.x + 7
+spit_fax(c.center.x)
+spit_fax(c)
+exit 0

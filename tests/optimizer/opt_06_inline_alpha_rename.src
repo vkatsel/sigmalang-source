@@ -1,0 +1,12 @@
+lore compute(npc x) -> npc {
+    yap npc y := (x + 3);
+    exit (y * 2);
+}
+
+yap npc x := 10;
+yap npc y := 20;
+yap npc res := compute(x);
+spit_fax(res);
+spit_fax(x);
+spit_fax(y);
+

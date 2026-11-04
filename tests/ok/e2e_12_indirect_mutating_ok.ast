@@ -1,0 +1,24 @@
+Program
+  Squad Counter
+    Field val npc yap
+    MemberLore step() -> npc
+      Exit
+        Call add_delta
+          Number 5
+    MemberLore add_delta(npc d) -> npc
+      Assign val
+        BinOp +
+          Var val
+          Var d
+      Exit
+        Var val
+  Decl c Counter yap
+    SquadInit
+      Number 10
+  Print
+    MemberCall step
+      Var c
+  Print
+    Var c
+  Exit
+    Number 0

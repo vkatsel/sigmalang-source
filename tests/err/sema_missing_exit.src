@@ -1,0 +1,3 @@
+lore no_exit(npc a) -> npc {
+    canon npc y 👈🏻 a + 1
+}

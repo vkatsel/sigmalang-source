@@ -24,12 +24,24 @@ class TokenKind(enum.StrEnum):
     NAH = "nah"
     EXIT = "exit"
     FR = "fr"
+    SQUAD = "squad"
+    LORE = "lore"
+    READ = "absorb"
+    PRINT = "spit_fax"
+    AS_LONG_AS = "as_long_as"
+    STREAK = "streak"
+    IN = "in"
+    RAGEQUIT = "ragequit"
+    WHILE = AS_LONG_AS
+    FOR = STREAK
+    BREAK = RAGEQUIT
 
     # Boolean Literals
     HOT = "hot"
     CRINGE = "cringe"
 
-    # Identifiers & Number Literals
+    # String, Identifiers & Number Literals
+    STRING = "STRING"
     IDENT = "IDENT"
     NUMBER = "NUMBER"
 
@@ -40,9 +52,17 @@ class TokenKind(enum.StrEnum):
     NEQ = "!="
     EMOJI_EQ = "🤝"
     EMOJI_NEQ = "💔"
+    LT = "<"
+    LTE = "<="
+    GT = ">"
+    GTE = ">="
+    ARROW = "->"
     PLUS = "+"
     MINUS = "-"
     STAR = "*"
+    DOTDOT = ".."
+    DOT = "."
+    COMMA = ","
     LPAREN = "("
     RPAREN = ")"
     LBRACE = "{"
@@ -62,6 +82,17 @@ KEYWORDS: dict[str, TokenKind] = {
     "nah": TokenKind.NAH,
     "exit": TokenKind.EXIT,
     "fr": TokenKind.FR,
+    "squad": TokenKind.SQUAD,
+    "lore": TokenKind.LORE,
+    "absorb": TokenKind.READ,
+    "spit_fax": TokenKind.PRINT,
+    "as_long_as": TokenKind.AS_LONG_AS,
+    "while": TokenKind.AS_LONG_AS,
+    "streak": TokenKind.STREAK,
+    "for": TokenKind.STREAK,
+    "in": TokenKind.IN,
+    "ragequit": TokenKind.RAGEQUIT,
+    "break": TokenKind.RAGEQUIT,
     "hot": TokenKind.HOT,
     "cringe": TokenKind.CRINGE,
 }
@@ -174,12 +205,61 @@ class Lexer:
 
             if b == ord("-"):
                 self._advance_byte()
+                if self._peek_byte() == ord(">"):
+                    self._advance_byte()
+                    tokens.append(Token(TokenKind.ARROW, "->", tok_line, tok_col))
+                    continue
                 tokens.append(Token(TokenKind.MINUS, "-", tok_line, tok_col))
                 continue
 
             if b == ord("*"):
                 self._advance_byte()
                 tokens.append(Token(TokenKind.STAR, "*", tok_line, tok_col))
+                continue
+
+            if b == ord("<"):
+                self._advance_byte()
+                if self._peek_byte() == ord("="):
+                    self._advance_byte()
+                    tokens.append(Token(TokenKind.LTE, "<=", tok_line, tok_col))
+                    continue
+                tokens.append(Token(TokenKind.LT, "<", tok_line, tok_col))
+                continue
+
+            if b == ord(">"):
+                self._advance_byte()
+                if self._peek_byte() == ord("="):
+                    self._advance_byte()
+                    tokens.append(Token(TokenKind.GTE, ">=", tok_line, tok_col))
+                    continue
+                tokens.append(Token(TokenKind.GT, ">", tok_line, tok_col))
+                continue
+
+            if b == ord("."):
+                if self._peek_byte(1) == ord("."):
+                    self._advance_byte()
+                    self._advance_byte()
+                    tokens.append(Token(TokenKind.DOTDOT, "..", tok_line, tok_col))
+                    continue
+                self._advance_byte()
+                tokens.append(Token(TokenKind.DOT, ".", tok_line, tok_col))
+                continue
+
+            if b == ord(","):
+                self._advance_byte()
+                tokens.append(Token(TokenKind.COMMA, ",", tok_line, tok_col))
+                continue
+
+            if b == ord('"'):
+                self._advance_byte()
+                str_bytes = bytearray()
+                while self.pos < self.length and self.bytes[self.pos] != ord('"') and self.bytes[self.pos] != ord("\n"):
+                    str_bytes.append(self._advance_byte())
+                if self.pos >= self.length or self.bytes[self.pos] == ord("\n"):
+                    raise LexerError(tok_line, tok_col, "unterminated string literal")
+                self._advance_byte()  # consume closing "
+                str_text = str_bytes.decode("utf-8", errors="replace")
+                tokens.append(Token(TokenKind.STRING, str_text, tok_line, tok_col))
                 continue
 
             if b == ord("("):

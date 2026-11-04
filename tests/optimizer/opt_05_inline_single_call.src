@@ -1,0 +1,8 @@
+lore double_val(npc x) -> npc {
+    exit (x * 2);
+}
+
+yap npc num := 21;
+yap npc result := double_val(num);
+spit_fax(result);
+

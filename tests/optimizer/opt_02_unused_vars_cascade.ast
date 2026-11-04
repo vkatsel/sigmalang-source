@@ -1,0 +1,5 @@
+Program
+  Decl answer npc yap
+    Number 99
+  Print
+    Var answer

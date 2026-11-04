@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from src.lexer import Token, TokenKind
 
 MAX_I32 = 2147483647
@@ -43,6 +43,64 @@ class ProgramNode(ASTNode):
         return "\n".join(lines)
 
 @dataclass(slots=True)
+class FieldDef:
+    kind: str
+    type_name: str
+    name: str
+    line: int
+    col: int
+
+@dataclass(slots=True)
+class SquadDefNode(StmtNode):
+    name: str
+    fields: list[FieldDef]
+    methods: list["LoreDefNode"]
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}Squad {self.name}"]
+        for f in self.fields:
+            lines.append(f"{sp}  Field {f.name} {f.type_name} {f.kind}")
+        for m in self.methods:
+            lines.append(m.dump(indent + 2))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class ParamDef:
+    type_name: str
+    name: str
+    line: int
+    col: int
+
+@dataclass(slots=True)
+class LoreDefNode(StmtNode):
+    name: str
+    params: list[ParamDef]
+    return_type: str
+    body: list[StmtNode]
+    is_member: bool = False
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        tag = "MemberLore" if self.is_member else "Lore"
+        params_str = ", ".join(f"{p.type_name} {p.name}" for p in self.params)
+        lines = [f"{sp}{tag} {self.name}({params_str}) -> {self.return_type}"]
+        for stmt in self.body:
+            lines.append(stmt.dump(indent + 2))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class SquadInitNode(ExprNode):
+    elements: list[ExprNode]
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}SquadInit"]
+        for elem in self.elements:
+            lines.append(elem.dump(indent + 2))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
 class DeclNode(StmtNode):
     kind: str
     type_name: str
@@ -60,11 +118,26 @@ class AssignNode(StmtNode):
     name: str
     op: str
     expr: ExprNode
+    fields: list[str] = field(default_factory=list)
 
     def dump(self, indent: int = 0) -> str:
         sp = " " * indent
-        lines = [f"{sp}Assign {self.name}"]
+        if self.fields:
+            chain = ".".join([self.name, *self.fields])
+            lines = [f"{sp}FieldAssign {chain}"]
+        else:
+            lines = [f"{sp}Assign {self.name}"]
         lines.append(self.expr.dump(indent + 2))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class PrintStmtNode(StmtNode):
+    arg: ExprNode
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}Print"]
+        lines.append(self.arg.dump(indent + 2))
         return "\n".join(lines)
 
 @dataclass(slots=True)
@@ -86,6 +159,47 @@ class IfStmtNode(StmtNode):
             for s in self.else_body:
                 lines.append(s.dump(indent + 4))
         return "\n".join(lines)
+
+@dataclass(slots=True)
+class WhileStmtNode(StmtNode):
+    cond: ExprNode
+    body: list[StmtNode]
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}While"]
+        lines.append(f"{sp}  Condition")
+        lines.append(self.cond.dump(indent + 4))
+        lines.append(f"{sp}  Body")
+        for s in self.body:
+            lines.append(s.dump(indent + 4))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class ForStmtNode(StmtNode):
+    var_name: str
+    start: ExprNode
+    end: ExprNode
+    body: list[StmtNode]
+    var_type: str = "npc"
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}For {self.var_name}"]
+        lines.append(f"{sp}  Start")
+        lines.append(self.start.dump(indent + 4))
+        lines.append(f"{sp}  End")
+        lines.append(self.end.dump(indent + 4))
+        lines.append(f"{sp}  Body")
+        for s in self.body:
+            lines.append(s.dump(indent + 4))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class BreakStmtNode(StmtNode):
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        return f"{sp}Break"
 
 @dataclass(slots=True)
 class ExitStmtNode(StmtNode):
@@ -123,12 +237,63 @@ class LiteralNode(ExprNode):
         return f"{sp}Number {self.value}"
 
 @dataclass(slots=True)
+class StringLiteralNode(ExprNode):
+    value: str
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        return f'{sp}String "{self.value}"'
+
+@dataclass(slots=True)
+class ReadNode(ExprNode):
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        return f"{sp}Read"
+
+@dataclass(slots=True)
 class VarNode(ExprNode):
     name: str
 
     def dump(self, indent: int = 0) -> str:
         sp = " " * indent
         return f"{sp}Var {self.name}"
+
+@dataclass(slots=True)
+class CallNode(ExprNode):
+    func_name: str
+    args: list[ExprNode]
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}Call {self.func_name}"]
+        for a in self.args:
+            lines.append(a.dump(indent + 2))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class FieldAccessNode(ExprNode):
+    target: ExprNode
+    field_name: str
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}FieldAccess {self.field_name}"]
+        lines.append(self.target.dump(indent + 2))
+        return "\n".join(lines)
+
+@dataclass(slots=True)
+class MemberCallNode(ExprNode):
+    target: ExprNode
+    method_name: str
+    args: list[ExprNode]
+
+    def dump(self, indent: int = 0) -> str:
+        sp = " " * indent
+        lines = [f"{sp}MemberCall {self.method_name}"]
+        lines.append(self.target.dump(indent + 2))
+        for a in self.args:
+            lines.append(a.dump(indent + 2))
+        return "\n".join(lines)
 
 # --- Recursive Descent Parser ---
 
@@ -159,12 +324,116 @@ class Parser:
             if self._peek().kind == TokenKind.SEMICOLON:
                 self.pos += 1
                 continue
+            match self._peek().kind:
+                case TokenKind.SQUAD:
+                    statements.append(self.parse_squad_def())
+                case TokenKind.LORE:
+                    statements.append(self.parse_lore_def(is_member=False))
+                case _:
+                    stmt = self.parse_statement()
+                    statements.append(stmt)
+            if self._peek().kind == TokenKind.SEMICOLON:
+                self.pos += 1
+
+        return ProgramNode(line=prog_line, col=prog_col, statements=statements)
+
+    def parse_squad_def(self) -> SquadDefNode:
+        squad_tok = self._eat(TokenKind.SQUAD)
+        name_tok = self._eat(TokenKind.IDENT)
+        self._eat(TokenKind.LBRACE)
+
+        fields: list[FieldDef] = []
+        methods: list[LoreDefNode] = []
+
+        # Parse fields first
+        while self._peek().kind in (TokenKind.CANON, TokenKind.YAP, TokenKind.CANONMAXING):
+            kind_tok = self._peek()
+            self.pos += 1
+            type_tok = self.parse_type()
+            fname_tok = self._eat(TokenKind.IDENT)
+            fields.append(FieldDef(
+                kind=kind_tok.text,
+                type_name=type_tok.text,
+                name=fname_tok.text,
+                line=fname_tok.line,
+                col=fname_tok.col,
+            ))
+            if self._peek().kind == TokenKind.SEMICOLON:
+                self.pos += 1
+
+        if not fields:
+            tok = self._peek()
+            raise ParserError(tok.line, tok.col, "expected at least one field in 'squad'")
+
+        # Parse member functions
+        while self._peek().kind == TokenKind.LORE:
+            methods.append(self.parse_lore_def(is_member=True))
+
+        if self._peek().kind in (TokenKind.CANON, TokenKind.YAP, TokenKind.CANONMAXING):
+            tok = self._peek()
+            raise ParserError(tok.line, tok.col, "fields must be declared before member functions in 'squad'")
+
+        self._eat(TokenKind.RBRACE)
+        return SquadDefNode(
+            line=squad_tok.line,
+            col=squad_tok.col,
+            name=name_tok.text,
+            fields=fields,
+            methods=methods,
+        )
+
+    def parse_lore_def(self, is_member: bool = False) -> LoreDefNode:
+        lore_tok = self._eat(TokenKind.LORE)
+        name_tok = self._eat(TokenKind.IDENT)
+        self._eat(TokenKind.LPAREN)
+
+        params: list[ParamDef] = []
+        if self._peek().kind != TokenKind.RPAREN:
+            ptype_tok = self.parse_type()
+            pname_tok = self._eat(TokenKind.IDENT)
+            params.append(ParamDef(type_name=ptype_tok.text, name=pname_tok.text, line=pname_tok.line, col=pname_tok.col))
+            while self._peek().kind == TokenKind.COMMA:
+                self.pos += 1
+                ptype_tok = self.parse_type()
+                pname_tok = self._eat(TokenKind.IDENT)
+                params.append(ParamDef(type_name=ptype_tok.text, name=pname_tok.text, line=pname_tok.line, col=pname_tok.col))
+
+        self._eat(TokenKind.RPAREN)
+        self._eat(TokenKind.ARROW)
+        ret_type_tok = self.parse_type()
+        self._eat(TokenKind.LBRACE)
+
+        body: list[StatementNode] = []
+        while self._peek().kind not in (TokenKind.RBRACE, TokenKind.EOF):
+            if self._peek().kind == TokenKind.SEMICOLON:
+                self.pos += 1
+                continue
             stmt = self.parse_statement()
             if self._peek().kind == TokenKind.SEMICOLON:
                 self.pos += 1
-            statements.append(stmt)
+            body.append(stmt)
 
-        return ProgramNode(line=prog_line, col=prog_col, statements=statements)
+        if not body:
+            tok = self._peek()
+            raise ParserError(tok.line, tok.col, "expected at least one statement in 'lore' body")
+
+        self._eat(TokenKind.RBRACE)
+        return LoreDefNode(
+            line=lore_tok.line,
+            col=lore_tok.col,
+            name=name_tok.text,
+            params=params,
+            return_type=ret_type_tok.text,
+            body=body,
+            is_member=is_member,
+        )
+
+    def parse_type(self) -> Token:
+        tok = self._peek()
+        if tok.kind in (TokenKind.TYPE_NPC, TokenKind.TYPE_SIGMA, TokenKind.TYPE_TAKE, TokenKind.IDENT):
+            self.pos += 1
+            return tok
+        raise ParserError(tok.line, tok.col, f"expected type ('npc', 'sigma', 'take' or squad name), got '{tok.text or tok.kind}'")
 
     def parse_statement(self) -> StatementNode:
         tok = self._peek()
@@ -174,8 +443,16 @@ class Parser:
                 stmt = self.parse_decl()
             case TokenKind.IDENT:
                 stmt = self.parse_assign()
+            case TokenKind.PRINT:
+                stmt = self.parse_print()
             case TokenKind.IS_THIS_REAL:
                 return self.parse_if()
+            case TokenKind.WHILE:
+                return self.parse_while()
+            case TokenKind.FOR:
+                return self.parse_for()
+            case TokenKind.BREAK:
+                stmt = self.parse_break()
             case TokenKind.EXIT:
                 stmt = self.parse_exit()
             case _:
@@ -194,14 +471,46 @@ class Parser:
 
         return stmt
 
+    def parse_print(self) -> PrintStmtNode:
+        print_tok = self._eat(TokenKind.PRINT)
+        self._eat(TokenKind.LPAREN)
+        arg: ExprNode
+        if self._peek().kind == TokenKind.STRING:
+            str_tok = self._eat(TokenKind.STRING)
+            arg = StringLiteralNode(line=str_tok.line, col=str_tok.col, value=str_tok.text)
+        else:
+            arg = self.parse_expr()
+        self._eat(TokenKind.RPAREN)
+        return PrintStmtNode(line=print_tok.line, col=print_tok.col, arg=arg)
+
+    def parse_squad_init(self) -> SquadInitNode:
+        open_brace = self._eat(TokenKind.LBRACE)
+        elements: list[ExprNode] = []
+        if self._peek().kind != TokenKind.RBRACE:
+            elem = self.parse_squad_init() if self._peek().kind == TokenKind.LBRACE else self.parse_expr()
+            elements.append(elem)
+            while self._peek().kind == TokenKind.COMMA:
+                self.pos += 1
+                elem = self.parse_squad_init() if self._peek().kind == TokenKind.LBRACE else self.parse_expr()
+                elements.append(elem)
+        self._eat(TokenKind.RBRACE)
+        return SquadInitNode(line=open_brace.line, col=open_brace.col, elements=elements)
+
     def parse_decl(self) -> DeclNode:
         kind_tok = self._peek()
         self.pos += 1
 
         type_tok = self._peek()
-        if type_tok.kind not in (TokenKind.TYPE_NPC, TokenKind.TYPE_SIGMA, TokenKind.TYPE_TAKE):
+        # Stage 1 compatibility check: if missing type, e.g. "canon x 👈🏻 10"
+        if type_tok.kind == TokenKind.IDENT:
+            next_tok = self._peek(1)
+            if next_tok.kind in (TokenKind.ASSIGN, TokenKind.EMOJI_ASSIGN):
+                raise ParserError(type_tok.line, type_tok.col, f"expected type ('npc', 'sigma', 'take'), got '{type_tok.text}'")
+            self.pos += 1
+        elif type_tok.kind in (TokenKind.TYPE_NPC, TokenKind.TYPE_SIGMA, TokenKind.TYPE_TAKE):
+            self.pos += 1
+        else:
             raise ParserError(type_tok.line, type_tok.col, f"expected type ('npc', 'sigma', 'take'), got '{type_tok.text or type_tok.kind}'")
-        self.pos += 1
 
         name_tok = self._eat(TokenKind.IDENT)
 
@@ -210,7 +519,10 @@ class Parser:
             raise ParserError(assign_tok.line, assign_tok.col, f"expected ':=' or '👈🏻', got '{assign_tok.text or assign_tok.kind}'")
         self.pos += 1
 
-        expr = self.parse_expr()
+        if self._peek().kind == TokenKind.LBRACE:
+            expr: ExprNode = self.parse_squad_init()
+        else:
+            expr = self.parse_expr()
 
         # Check integer overflow for npc (i32)
         if type_tok.kind == TokenKind.TYPE_NPC and isinstance(expr, LiteralNode) and isinstance(expr.value, int):
@@ -228,6 +540,12 @@ class Parser:
 
     def parse_assign(self) -> AssignNode:
         name_tok = self._eat(TokenKind.IDENT)
+        fields: list[str] = []
+
+        while self._peek().kind == TokenKind.DOT:
+            self.pos += 1
+            f_tok = self._eat(TokenKind.IDENT)
+            fields.append(f_tok.text)
 
         assign_tok = self._peek()
         if assign_tok.kind not in (TokenKind.ASSIGN, TokenKind.EMOJI_ASSIGN):
@@ -241,14 +559,12 @@ class Parser:
             name=name_tok.text,
             op=assign_tok.text,
             expr=expr,
+            fields=fields,
         )
 
-    def parse_if(self) -> IfStmtNode:
-        if_tok = self._eat(TokenKind.IS_THIS_REAL)
-        cond = self.parse_expr()
-
+    def _parse_block(self, block_name: str) -> list[StatementNode]:
         self._eat(TokenKind.LBRACE)
-        then_body: list[StatementNode] = []
+        body: list[StatementNode] = []
         while self._peek().kind not in (TokenKind.RBRACE, TokenKind.EOF):
             if self._peek().kind == TokenKind.SEMICOLON:
                 self.pos += 1
@@ -256,28 +572,22 @@ class Parser:
             stmt = self.parse_statement()
             if self._peek().kind == TokenKind.SEMICOLON:
                 self.pos += 1
-            then_body.append(stmt)
+            body.append(stmt)
 
-        if not then_body:
-            raise ParserError(self._peek().line, self._peek().col, "expected at least one statement in 'is_this_real' block")
+        if not body:
+            raise ParserError(self._peek().line, self._peek().col, f"expected at least one statement in '{block_name}' block")
         self._eat(TokenKind.RBRACE)
+        return body
+
+    def parse_if(self) -> IfStmtNode:
+        if_tok = self._eat(TokenKind.IS_THIS_REAL)
+        cond = self.parse_expr()
+        then_body = self._parse_block("is_this_real")
 
         else_body: list[StatementNode] | None = None
         if self._peek().kind == TokenKind.NAH:
             self.pos += 1
-            self._eat(TokenKind.LBRACE)
-            else_body = []
-            while self._peek().kind not in (TokenKind.RBRACE, TokenKind.EOF):
-                if self._peek().kind == TokenKind.SEMICOLON:
-                    self.pos += 1
-                    continue
-                stmt = self.parse_statement()
-                if self._peek().kind == TokenKind.SEMICOLON:
-                    self.pos += 1
-                else_body.append(stmt)
-            if not else_body:
-                raise ParserError(self._peek().line, self._peek().col, "expected at least one statement in 'nah' block")
-            self._eat(TokenKind.RBRACE)
+            else_body = self._parse_block("nah")
 
         return IfStmtNode(
             line=if_tok.line,
@@ -286,6 +596,38 @@ class Parser:
             then_body=then_body,
             else_body=else_body,
         )
+
+    def parse_while(self) -> WhileStmtNode:
+        while_tok = self._eat(TokenKind.WHILE)
+        cond = self.parse_expr()
+        body = self._parse_block(while_tok.text or "while")
+        return WhileStmtNode(
+            line=while_tok.line,
+            col=while_tok.col,
+            cond=cond,
+            body=body,
+        )
+
+    def parse_for(self) -> ForStmtNode:
+        for_tok = self._eat(TokenKind.FOR)
+        var_tok = self._eat(TokenKind.IDENT)
+        self._eat(TokenKind.IN)
+        start_expr = self.parse_expr()
+        self._eat(TokenKind.DOTDOT)
+        end_expr = self.parse_expr()
+        body = self._parse_block(for_tok.text or "for")
+        return ForStmtNode(
+            line=for_tok.line,
+            col=for_tok.col,
+            var_name=var_tok.text,
+            start=start_expr,
+            end=end_expr,
+            body=body,
+        )
+
+    def parse_break(self) -> BreakStmtNode:
+        tok = self._eat(TokenKind.BREAK)
+        return BreakStmtNode(line=tok.line, col=tok.col)
 
     def parse_exit(self) -> ExitStmtNode:
         exit_tok = self._eat(TokenKind.EXIT)
@@ -296,13 +638,19 @@ class Parser:
         left = self.parse_arith()
 
         comp_tok = self._peek()
-        if comp_tok.kind in (TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ):
+        if comp_tok.kind in (
+            TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ,
+            TokenKind.LT, TokenKind.LTE, TokenKind.GT, TokenKind.GTE
+        ):
             self.pos += 1
             right = self.parse_arith()
 
             # Prevent double comparisons: a == b == c
             next_comp = self._peek()
-            if next_comp.kind in (TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ):
+            if next_comp.kind in (
+                TokenKind.EQ, TokenKind.NEQ, TokenKind.EMOJI_EQ, TokenKind.EMOJI_NEQ,
+                TokenKind.LT, TokenKind.LTE, TokenKind.GT, TokenKind.GTE
+            ):
                 raise ParserError(next_comp.line, next_comp.col, "multiple comparisons in a single expression are not allowed")
 
             return BinOpNode(
@@ -364,9 +712,56 @@ class Parser:
             case TokenKind.CRINGE:
                 self.pos += 1
                 return LiteralNode(line=tok.line, col=tok.col, value=False, type_name="take")
+            case TokenKind.READ:
+                read_tok = self._eat(TokenKind.READ)
+                self._eat(TokenKind.LPAREN)
+                self._eat(TokenKind.RPAREN)
+                return ReadNode(line=read_tok.line, col=read_tok.col)
             case TokenKind.IDENT:
                 self.pos += 1
-                return VarNode(line=tok.line, col=tok.col, name=tok.text)
+                id_tok = tok
+                node: ExprNode
+                if self._peek().kind == TokenKind.LPAREN:
+                    self.pos += 1
+                    args: list[ExprNode] = []
+                    if self._peek().kind != TokenKind.RPAREN:
+                        args.append(self.parse_expr())
+                        while self._peek().kind == TokenKind.COMMA:
+                            self.pos += 1
+                            args.append(self.parse_expr())
+                    self._eat(TokenKind.RPAREN)
+                    node = CallNode(line=id_tok.line, col=id_tok.col, func_name=id_tok.text, args=args)
+                else:
+                    node = VarNode(line=id_tok.line, col=id_tok.col, name=id_tok.text)
+
+                while self._peek().kind == TokenKind.DOT:
+                    self.pos += 1
+                    member_tok = self._eat(TokenKind.IDENT)
+                    if self._peek().kind == TokenKind.LPAREN:
+                        self.pos += 1
+                        m_args: list[ExprNode] = []
+                        if self._peek().kind != TokenKind.RPAREN:
+                            m_args.append(self.parse_expr())
+                            while self._peek().kind == TokenKind.COMMA:
+                                self.pos += 1
+                                m_args.append(self.parse_expr())
+                        self._eat(TokenKind.RPAREN)
+                        node = MemberCallNode(
+                            line=member_tok.line,
+                            col=member_tok.col,
+                            target=node,
+                            method_name=member_tok.text,
+                            args=m_args,
+                        )
+                    else:
+                        node = FieldAccessNode(
+                            line=member_tok.line,
+                            col=member_tok.col,
+                            target=node,
+                            field_name=member_tok.text,
+                        )
+
+                return node
             case TokenKind.LPAREN:
                 self.pos += 1
                 expr = self.parse_expr()

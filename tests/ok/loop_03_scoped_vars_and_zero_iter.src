@@ -1,0 +1,25 @@
+yap npc sum := 0;
+yap npc x := 100;
+
+for i in 1 .. 4 {
+    yap npc x := i * 10;
+    sum := sum + x;
+}
+
+spit_fax(sum);
+spit_fax(x);
+
+while cringe {
+    x := x + 999;
+}
+
+for k in 10 .. 10 {
+    x := x + 999;
+}
+
+for m in 20 .. 5 {
+    x := x + 999;
+}
+
+spit_fax(x);
+

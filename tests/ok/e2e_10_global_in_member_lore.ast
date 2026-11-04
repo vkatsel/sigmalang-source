@@ -1,0 +1,29 @@
+Program
+  Decl global_counter npc yap
+    Number 10
+  Decl x npc canon
+    Number 999
+  Squad Counter
+    Field x npc yap
+    MemberLore bump(npc step) -> npc
+      Assign global_counter
+        BinOp +
+          Var global_counter
+          Var step
+      Assign x
+        BinOp +
+          Var x
+          Var global_counter
+      Exit
+        Var x
+  Decl c Counter yap
+    SquadInit
+      Number 5
+  Print
+    MemberCall bump
+      Var c
+      Number 3
+  Print
+    Var global_counter
+  Exit
+    Number 0

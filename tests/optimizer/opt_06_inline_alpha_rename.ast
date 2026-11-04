@@ -1,0 +1,21 @@
+Program
+  Decl x npc yap
+    Number 10
+  Decl y npc yap
+    Number 20
+  Decl _inl_1_x npc canon
+    Var x
+  Decl _inl_1_y npc yap
+    BinOp +
+      Var _inl_1_x
+      Number 3
+  Decl res npc yap
+    BinOp *
+      Var _inl_1_y
+      Number 2
+  Print
+    Var res
+  Print
+    Var x
+  Print
+    Var y

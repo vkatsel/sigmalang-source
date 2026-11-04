@@ -1,0 +1,10 @@
+squad Point {
+    yap npc x
+    yap npc y
+}
+squad Circle {
+    canon Point center
+    yap npc radius
+}
+yap Circle c 👈🏻 { { 1, 2 }, 5 }
+c.center.x 👈🏻 10

@@ -1,0 +1,3 @@
+lore bad_ret(npc a) -> npc {
+    exit hot
+}

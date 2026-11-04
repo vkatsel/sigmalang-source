@@ -1,0 +1,27 @@
+Program
+  Squad Point
+    Field x npc yap
+    Field y npc yap
+  Squad Circle
+    Field center Point yap
+    Field radius npc canon
+  Decl c Circle yap
+    SquadInit
+      SquadInit
+        Number 3
+        Number 4
+      Number 10
+  FieldAssign c.center.x
+    BinOp +
+      FieldAccess x
+        FieldAccess center
+          Var c
+      Number 7
+  Print
+    FieldAccess x
+      FieldAccess center
+        Var c
+  Print
+    Var c
+  Exit
+    Number 0

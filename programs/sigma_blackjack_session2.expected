@@ -1,0 +1,44 @@
+=== Welcome to Sigma Blackjack ===
+Enter lucky seed number:
+Starting chips:
+100
+--- New Round ---
+Enter bet (1 to chips, or 0 to cash out):
+Dealing player initial cards:
+Player card:
+3
+Player card:
+6
+Your total score:
+9
+Dealing dealer initial cards:
+Dealer card:
+7
+Dealer card:
+?
+Choose action: 1 (Hit), 2 (Stand), 3 (Double Down):
+Player card:
+3
+Your total score:
+12
+Choose action: 1 (Hit), 2 (Stand), 3 (Double Down):
+Player card:
+6
+Your total score:
+18
+Choose action: 1 (Hit), 2 (Stand), 3 (Double Down):
+Player card:
+7
+Your total score:
+25
+BUST! You went over 21!
+Result: Dealer wins. You lost your bet.
+Current chips balance:
+70
+--- New Round ---
+Enter bet (1 to chips, or 0 to cash out):
+Cashing out. Thanks for playing!
+=== Game Over ===
+Final chips:
+70
+Program exit with result 0

@@ -1,0 +1,22 @@
+Program
+  Squad Point
+    Field x npc yap
+    Field y npc yap
+    MemberLore d2() -> npc
+      Decl r npc canon
+        BinOp +
+          BinOp *
+            Var x
+            Var x
+          BinOp *
+            Var y
+            Var y
+      Exit
+        Var r
+  Decl p Point yap
+    SquadInit
+      Read
+      Read
+  Exit
+    MemberCall d2
+      Var p

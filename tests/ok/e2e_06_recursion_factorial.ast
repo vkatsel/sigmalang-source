@@ -1,0 +1,25 @@
+Program
+  Lore fact(npc n) -> npc
+    If
+      Condition
+        BinOp 🤝
+          Var n
+          Number 0
+      Then
+        Exit
+          Number 1
+      Else
+        Exit
+          BinOp *
+            Var n
+            Call fact
+              BinOp -
+                Var n
+                Number 1
+  Decl res npc canon
+    Call fact
+      Number 5
+  Print
+    Var res
+  Exit
+    Var res
