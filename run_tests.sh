@@ -210,6 +210,67 @@ if [ -d "${REPO_DIR}/tests/err" ]; then
     done
 fi
 
+# Test Real Programs (programs/)
+if [ -d "${REPO_DIR}/programs" ]; then
+    for prog in "${REPO_DIR}/programs"/*.txt; do
+        [ -e "$prog" ] || continue
+        prog_base="$(basename "$prog" .txt)"
+        prog_dir="$(dirname "$prog")"
+
+        session_inputs=()
+        for s_in in "${prog_dir}/${prog_base}"*.in; do
+            [ -e "$s_in" ] && session_inputs+=("$s_in")
+        done
+
+        if [ ${#session_inputs[@]} -eq 0 ]; then
+            continue
+        fi
+
+        PROG_LL="/tmp/sigmalang_${prog_base}_$$.ll"
+        PROG_OBJ="/tmp/sigmalang_${prog_base}_$$.o"
+        PROG_BIN="/tmp/sigmalang_${prog_base}_$$"
+
+        "$PYTHON" "${REPO_DIR}/compiler.py" "$prog" "$PROG_LL" >/dev/null 2>&1
+        llc -filetype=obj -relocation-model=pic "$PROG_LL" -o "$PROG_OBJ" >/dev/null 2>&1
+        clang -fPIE "$PROG_OBJ" -o "$PROG_BIN" >/dev/null 2>&1
+
+        for input_file in "${session_inputs[@]}"; do
+            TOTAL=$((TOTAL + 1))
+            session_name="$(basename "$input_file" .in)"
+            expected_file="${prog_dir}/${session_name}.expected"
+
+            if [ ! -f "$expected_file" ]; then
+                echo "⚠️  [SKIP] programs/${session_name}: missing .expected file"
+                continue
+            fi
+
+            actual_run="$("$PROG_BIN" < "$input_file" 2>&1)"
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                echo "❌ [FAIL] programs/${session_name} (Native): execution failed with code ${exit_code}"
+                echo "$actual_run"
+                FAIL_COUNT=$((FAIL_COUNT + 1))
+            else
+                expected_out_content="$(cat "$expected_file" | tr -d '\r')"
+                actual_run_clean="$(echo "$actual_run" | tr -d '\r')"
+                if [ "$actual_run_clean" != "$expected_out_content" ]; then
+                    echo "❌ [FAIL] programs/${session_name} (Native): runtime output mismatch"
+                    echo "--- Expected Output ---"
+                    echo "$expected_out_content"
+                    echo "--- Actual Output ---"
+                    echo "$actual_run_clean"
+                    FAIL_COUNT=$((FAIL_COUNT + 1))
+                else
+                    echo "✅ [PASS] programs/${session_name} (native binary)"
+                    OK_COUNT=$((OK_COUNT + 1))
+                fi
+            fi
+        done
+
+        rm -f "$PROG_LL" "$PROG_OBJ" "$PROG_BIN"
+    done
+fi
+
 echo ""
 echo "=== Test Results: Total: ${TOTAL} | Passed: ${OK_COUNT} | Failed: ${FAIL_COUNT} ==="
 

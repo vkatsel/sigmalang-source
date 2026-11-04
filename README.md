@@ -334,11 +334,47 @@ On any lexical, syntax, or semantic error, the compiler prints a single diagnost
 compilation error: line 11:16: cannot call mutating member function 'shift' on canon variable 'p'
 ```
 
+### 3.4 The Real Program: Sigma Blackjack (`programs/sigma_blackjack.txt`)
+
+`sigma_blackjack.txt` is an interactive console Blackjack (21) game built entirely in `sigmaLang`.
+The player starts with 100 chips, enters a lucky seed to initialize the deterministic LCG pseudo-random number generator, and plays consecutive rounds against the dealer.
+The game encapsulates table state inside a `squad BlackjackTable` structure with 6 mutating member functions (`reset_round`, `deal_player`, `deal_dealer`, `deal_dealer_hidden`, `reveal_dealer_hidden`, `payout`).
+Global `lore` functions (`next_seed`, `get_card_val`) implement bounded arithmetic pseudo-random card generation without relying on external libraries.
+The program prominently uses the Stage 3 Loop feature in multiple critical mechanics:
+1. `as_long_as table.chips > 0` drives the interactive outer game loop, with `ragequit` providing voluntary cash-out when the player enters `0`.
+2. `as_long_as player_turn == 1` manages player decision-making (Hit `1`, Stand `2`, or Double Down `3`), while `as_long_as table.dealer_score < 17` enforces dealer drawing rules.
+3. `streak p_i in 1 .. 3` executes initial two-card player dealing.
+4. `as_long_as rem >= 2` computes the 3:2 blackjack payout multiplier using repeated subtraction loops.
+
+#### Compiling to a Native Executable (`llc` + `clang`)
+```bash
+# 1. Compile sigmaLang source into LLVM IR:
+python3 compiler.py programs/sigma_blackjack.txt programs/sigma_blackjack.ll
+
+# 2. Compile LLVM IR into a native object file:
+llc -filetype=obj -relocation-model=pic programs/sigma_blackjack.ll -o programs/sigma_blackjack.o
+
+# 3. Link into a standalone native binary with clang:
+clang -fPIE programs/sigma_blackjack.o -o programs/sigma_blackjack
+
+# 4. Run interactively or pipe inputs:
+./programs/sigma_blackjack
+```
+
+#### Running Recorded Sessions
+```bash
+# Session 1 (Double Down & Win):
+./programs/sigma_blackjack < programs/sigma_blackjack_session1.in
+
+# Session 2 (Multiple Hits & Bust):
+./programs/sigma_blackjack < programs/sigma_blackjack_session2.in
+```
+
 ---
 
 ## 4. Running the Test Suite
 
-Run all 74 automated tests (Stage 1 AST & error tests, Stage 2 end-to-end LLVM IR execution tests with `.expected` and `.in`, Stage 2 negative semantic error tests with `.err`, Stage 3 loop tests, and Stage 3 optimizer transformation tests with equivalence checks):
+Run all 77 automated tests (Stage 1 AST & error tests, Stage 2 end-to-end LLVM IR execution tests with `.expected` and `.in`, Stage 2 negative semantic error tests with `.err`, Stage 3 loop tests, Stage 3 optimizer transformation tests with equivalence checks, and Stage 3 native binary real program sessions):
 ```bash
 ./run_tests.sh
 ```
